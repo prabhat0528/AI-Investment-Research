@@ -813,7 +813,7 @@ export default function Dashboard({
             </button>
 
             {showNotifDropdown && (
-              <div className="absolute right-0 mt-3 w-80 max-h-96 overflow-y-auto glass-panel border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl z-50 p-4 bg-white dark:bg-dark-850">
+              <div className="absolute right-0 mt-3 w-80 max-h-96 overflow-y-auto glass-panel border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl z-50 p-4 bg-white dark:bg-dark-800">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/5 mb-3">
                   <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Alerts & Summaries</span>
                   <button 
@@ -893,7 +893,7 @@ export default function Dashboard({
                   <button
                     key={ticker}
                     onClick={() => handleQuickResearch(ticker)}
-                    className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-dark-850 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-800 dark:text-slate-300 transition-all font-semibold text-sm shadow-sm"
+                    className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-dark-800 hover:bg-slate-100 dark:hover:bg-white/5 text-black dark:text-slate-200 transition-all font-semibold text-sm shadow-sm"
                   >
                     <span>{ticker}</span>
                     <ArrowRight className="w-3.5 h-3.5 opacity-50" />
@@ -1073,7 +1073,7 @@ export default function Dashboard({
                       className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${
                         isActive 
                           ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/10' 
-                          : 'bg-white dark:bg-dark-850 hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/5 text-slate-950 dark:text-slate-300'
+                          : 'bg-white dark:bg-dark-800 hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/5 text-black dark:text-slate-200'
                       }`}
                     >
                       <Icon className="w-4 h-4 shrink-0" />
@@ -1106,7 +1106,7 @@ export default function Dashboard({
                 </div>
 
                 {/* Agent Logs Drawer Accordion */}
-                <details className="group border border-slate-200 dark:border-white/5 bg-slate-100/50 dark:bg-dark-850/50 rounded-3xl overflow-hidden shadow-inner">
+                <details className="group border border-slate-200 dark:border-white/5 bg-slate-100/50 dark:bg-dark-800/50 rounded-3xl overflow-hidden shadow-inner">
                   <summary className="flex items-center justify-between p-5 cursor-pointer font-bold text-sm text-slate-700 dark:text-slate-300 select-none">
                     <div className="flex items-center space-x-2">
                       <Activity className="w-4 h-4 text-emerald-400" />

@@ -124,6 +124,30 @@ function MarkdownContent({ content }) {
     <ReactMarkdown 
       remarkPlugins={[remarkGfm]}
       components={{
+        p({ children }) {
+          return <p className="mb-4 text-slate-950 dark:text-slate-200 text-sm leading-relaxed">{children}</p>;
+        },
+        li({ children }) {
+          return <li className="mb-1.5 text-slate-955 dark:text-slate-200 text-sm leading-relaxed list-disc list-inside">{children}</li>;
+        },
+        ul({ children }) {
+          return <ul className="mb-4 pl-4 space-y-1">{children}</ul>;
+        },
+        ol({ children }) {
+          return <ol className="mb-4 pl-4 list-decimal space-y-1">{children}</ol>;
+        },
+        h1({ children }) {
+          return <h1 className="text-2xl font-black text-slate-950 dark:text-white mt-6 mb-4">{children}</h1>;
+        },
+        h2({ children }) {
+          return <h2 className="text-xl font-bold text-slate-955 dark:text-white mt-5 mb-3">{children}</h2>;
+        },
+        h3({ children }) {
+          return <h3 className="text-lg font-bold text-slate-955 dark:text-white mt-4 mb-2">{children}</h3>;
+        },
+        h4({ children }) {
+          return <h4 className="text-md font-bold text-slate-955 dark:text-white mt-3 mb-1.5">{children}</h4>;
+        },
         code({ node, inline, className, children, ...props }) {
           const text = String(children).replace(/\n$/, '');
           const isBoxDrawing = /[┌┐└┘─│├┤┬┴┼]/.test(text);
@@ -156,7 +180,7 @@ function MarkdownContent({ content }) {
         table({ children }) {
           return (
             <div className="my-6 overflow-x-auto rounded-2xl border border-slate-250 dark:border-white/10 shadow-md bg-white dark:bg-dark-900/40">
-              <table className="w-full border-collapse text-xs md:text-sm text-slate-850 dark:text-slate-200">
+              <table className="w-full border-collapse text-xs md:text-sm text-slate-950 dark:text-slate-200">
                 {children}
               </table>
             </div>
@@ -172,10 +196,10 @@ function MarkdownContent({ content }) {
           return <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors duration-150">{children}</tr>;
         },
         th({ children }) {
-          return <th className="p-3.5 font-bold border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">{children}</th>;
+          return <th className="p-3.5 font-bold border border-slate-200 dark:border-white/10 text-slate-950 dark:text-white">{children}</th>;
         },
         td({ children }) {
-          return <td className="p-3.5 font-medium border border-slate-200 dark:border-white/10">{children}</td>;
+          return <td className="p-3.5 font-medium border border-slate-200 dark:border-white/10 text-slate-950 dark:text-slate-200">{children}</td>;
         }
       }}
     >
@@ -296,7 +320,7 @@ function StrategicAuditDashboard({ activeReport }) {
             <div className="w-12 h-1 bg-red-500/30 rounded-full mt-1.5 mb-4"></div>
             <ul className="space-y-3">
               {audit.headwinds.map((item, idx) => (
-                <li key={idx} className="flex items-start space-x-2 text-slate-700 dark:text-slate-300 text-xs leading-relaxed">
+                <li key={idx} className="flex items-start space-x-2 text-slate-955 dark:text-slate-200 text-xs leading-relaxed">
                   <span className="text-red-500 dark:text-red-400 mt-1 shrink-0">•</span>
                   <span>{item}</span>
                 </li>
@@ -313,7 +337,7 @@ function StrategicAuditDashboard({ activeReport }) {
             <div className="w-12 h-1 bg-blue-500/30 rounded-full mt-1.5 mb-4"></div>
             <ul className="space-y-3">
               {audit.macro.map((item, idx) => (
-                <li key={idx} className="flex items-start space-x-2 text-slate-700 dark:text-slate-300 text-xs leading-relaxed">
+                <li key={idx} className="flex items-start space-x-2 text-slate-955 dark:text-slate-200 text-xs leading-relaxed">
                   <span className="text-blue-500 dark:text-blue-400 mt-1 shrink-0">•</span>
                   <span>{item}</span>
                 </li>
@@ -330,7 +354,7 @@ function StrategicAuditDashboard({ activeReport }) {
             <div className="w-12 h-1 bg-purple-500/30 rounded-full mt-1.5 mb-4"></div>
             <ul className="space-y-3">
               {audit.micro.map((item, idx) => (
-                <li key={idx} className="flex items-start space-x-2 text-slate-700 dark:text-slate-300 text-xs leading-relaxed">
+                <li key={idx} className="flex items-start space-x-2 text-slate-955 dark:text-slate-200 text-xs leading-relaxed">
                   <span className="text-purple-500 dark:text-purple-400 mt-1 shrink-0">•</span>
                   <span>{item}</span>
                 </li>
@@ -356,7 +380,7 @@ function StrategicAuditDashboard({ activeReport }) {
               <h5 className="text-md font-bold text-slate-900 dark:text-white mt-1">
                 {isApple ? "Best-in-Class Margins" : "Severe Margin Erosion"}
               </h5>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+              <p className="text-xs text-slate-955 dark:text-slate-300 mt-1.5 leading-relaxed">
                 {isApple 
                   ? "Apple maintains unrivaled pricing power, characterized by premium product mix and high-margin services revenue."
                   : "Aggressive price-cutting strategies have compressed operating and net profit margins down to legacy levels."}
@@ -366,7 +390,7 @@ function StrategicAuditDashboard({ activeReport }) {
             <div className="my-5 space-y-3.5">
               {/* Operating Margin Bar */}
               <div>
-                <div className="flex justify-between text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <div className="flex justify-between text-[11px] font-semibold text-slate-955 dark:text-slate-300 mb-1">
                   <span>Operating Margin</span>
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">{(risks.margins.operating * 100).toFixed(2)}%</span>
                 </div>
@@ -380,7 +404,7 @@ function StrategicAuditDashboard({ activeReport }) {
 
               {/* Net Margin Bar */}
               <div>
-                <div className="flex justify-between text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <div className="flex justify-between text-[11px] font-semibold text-slate-955 dark:text-slate-300 mb-1">
                   <span>Net Profit Margin</span>
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">{(risks.margins.net * 100).toFixed(2)}%</span>
                 </div>
@@ -403,7 +427,7 @@ function StrategicAuditDashboard({ activeReport }) {
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-amber-500">Market Multiple Risk</div>
               <h5 className="text-md font-bold text-slate-900 dark:text-white mt-1">Extreme Valuation Disconnect</h5>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+              <p className="text-xs text-slate-955 dark:text-slate-300 mt-1.5 leading-relaxed">
                 {isApple 
                   ? "An astronomical Price-to-Book ratio and elevated trailing multiple price in near-flawless operational execution."
                   : "Extremely high multiple pricing relative to slowing fundamental cash flows creates severe multiple contraction exposure."}
@@ -437,7 +461,7 @@ function StrategicAuditDashboard({ activeReport }) {
               <h5 className="text-md font-bold text-slate-900 dark:text-white mt-1">
                 {isApple ? "Inflated Return on Equity" : "Low Returns on Capital"}
               </h5>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+              <p className="text-xs text-slate-955 dark:text-slate-300 mt-1.5 leading-relaxed">
                 {isApple 
                   ? "Aggressive multi-year share buybacks have severely depleted book equity, pushing ROE to an inflated level."
                   : "Asset and equity yields are failing to exceed typical hurdle rates and cost of capital for institutional investors."}
@@ -964,7 +988,7 @@ export default function Dashboard({
                 <div className="my-6">
                   {getDecisionBadge(activeReport.decision)}
                 </div>
-                <div className="text-sm text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-white/5 pt-3 leading-relaxed">
+                <div className="text-sm text-slate-955 dark:text-slate-200 border-t border-slate-200 dark:border-white/5 pt-3 leading-relaxed">
                   <strong>Thesis:</strong> {activeReport.reasoning}
                 </div>
               </div>
@@ -1049,7 +1073,7 @@ export default function Dashboard({
                       className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${
                         isActive 
                           ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/10' 
-                          : 'bg-white dark:bg-dark-850 hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/5 text-slate-700 dark:text-slate-300'
+                          : 'bg-white dark:bg-dark-850 hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/5 text-slate-950 dark:text-slate-300'
                       }`}
                     >
                       <Icon className="w-4 h-4 shrink-0" />
@@ -1064,11 +1088,11 @@ export default function Dashboard({
                 
                 {/* Active Tab Content Panel */}
                 <div className="glass-panel p-8 rounded-3xl border border-slate-200 dark:border-white/5 shadow-md min-h-[400px]">
-                  <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 border-b border-slate-200 dark:border-white/5 pb-4 mb-6">
+                  <h3 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-100 border-b border-slate-200 dark:border-white/5 pb-4 mb-6">
                     {tabConfig.find(t => t.key === activeTab)?.label}
                   </h3>
 
-                  <div className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed font-sans">
+                  <div className="text-slate-950 dark:text-slate-100 text-sm leading-relaxed font-sans">
                     {activeTab === 'strategicAudit' ? (
                       <StrategicAuditDashboard activeReport={activeReport} />
                     ) : (

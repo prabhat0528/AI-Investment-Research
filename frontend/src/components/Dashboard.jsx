@@ -181,8 +181,17 @@ export default function Dashboard({
   const handleDownloadPDF = () => {
     if (!activeReport) return;
     
+    // Temporarily disable dark mode on document element for clean PDF capture
+    const isDark = document.documentElement.classList.contains('dark');
+    if (isDark) {
+      document.documentElement.classList.remove('dark');
+    }
+
     const element = document.getElementById('report-to-pdf');
-    if (!element) return;
+    if (!element) {
+      if (isDark) document.documentElement.classList.add('dark');
+      return;
+    }
 
     const opt = {
       margin:       0.35,
@@ -198,13 +207,24 @@ export default function Dashboard({
       pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
+    const generatePdf = () => {
+      window.html2pdf().set(opt).from(element).save()
+        .then(() => {
+          if (isDark) document.documentElement.classList.add('dark');
+        })
+        .catch((err) => {
+          console.error("PDF download failed:", err);
+          if (isDark) document.documentElement.classList.add('dark');
+        });
+    };
+
     if (window.html2pdf) {
-      window.html2pdf().set(opt).from(element).save();
+      generatePdf();
     } else {
       const script = document.createElement('script');
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
       script.onload = () => {
-        window.html2pdf().set(opt).from(element).save();
+        generatePdf();
       };
       document.body.appendChild(script);
     }
@@ -649,7 +669,7 @@ export default function Dashboard({
       {/* Offscreen PDF template generator */}
       {activeReport && (
         <div className="pdf-offscreen">
-          <div id="report-to-pdf" className="p-10 bg-white text-slate-900 font-sans space-y-8" style={{ width: '800px' }}>
+          <div id="report-to-pdf" className="p-10 bg-white text-slate-900 font-sans space-y-8" style={{ width: '740px' }}>
             {/* Document Header */}
             <div className="border-b-4 border-slate-900 pb-5 flex justify-between items-end">
               <div>
@@ -657,7 +677,7 @@ export default function Dashboard({
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 mt-1">
                   INVESTMENT AUDIT REPORT
                 </h1>
-                <h2 className="text-xl font-bold text-slate-650 mt-0.5">
+                <h2 className="text-xl font-bold text-slate-800 mt-0.5">
                   {activeReport.companyName} ({activeReport.ticker})
                 </h2>
               </div>
@@ -672,11 +692,11 @@ export default function Dashboard({
             </div>
 
             {/* Core Rationale / Thesis */}
-            <div className="bg-slate-105 p-6 rounded-2xl border border-slate-200">
+            <div className="bg-slate-100 p-6 rounded-2xl border border-slate-200">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                 Executive Rationale & Investment Thesis
               </h3>
-              <p className="text-sm font-medium leading-relaxed text-slate-805">
+              <p className="text-sm font-medium leading-relaxed text-slate-800">
                 {activeReport.reasoning}
               </p>
             </div>
@@ -727,8 +747,8 @@ export default function Dashboard({
                   const contentText = activeReport.reportSections?.[tab.key];
                   if (!contentText) return null;
                   return (
-                    <div key={tab.key} className="space-y-2 page-break-avoid">
-                      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1">
+                    <div key={tab.key} className="space-y-2">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1 page-break-avoid">
                         {tab.label}
                       </h3>
                       <div className="markdown-content text-slate-800 text-xs leading-relaxed">

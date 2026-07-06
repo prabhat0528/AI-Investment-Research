@@ -110,10 +110,10 @@ export default function StrategicAuditDashboard({ activeReport }) {
         <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 mt-4 md:mt-0">
           {/* Card 1 */}
           <div className="relative group bg-red-500/5 hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/40 rounded-2xl p-5 transition-all duration-300 shadow-md">
-            <div className="absolute top-4 right-4 bg-red-500/10 text-red-405 dark:text-red-400 p-2 rounded-xl">
+            <div className="absolute top-4 right-4 bg-red-500/10 text-red-500 dark:text-red-400 p-2 rounded-xl">
               {isApple ? <TrendingDown className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4" />}
             </div>
-            <h4 className="text-sm font-bold uppercase tracking-wider text-red-555 dark:text-red-400">{card1Title}</h4>
+            <h4 className="text-sm font-bold uppercase tracking-wider text-red-600 dark:text-red-400">{card1Title}</h4>
             <div className="w-12 h-1 bg-red-500/30 rounded-full mt-1.5 mb-4"></div>
             <ul className="space-y-3">
               {audit.headwinds.map((item, idx) => (
@@ -127,10 +127,10 @@ export default function StrategicAuditDashboard({ activeReport }) {
 
           {/* Card 2 */}
           <div className="relative group bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/40 rounded-2xl p-5 transition-all duration-300 shadow-md">
-            <div className="absolute top-4 right-4 bg-blue-500/10 text-blue-505 dark:text-blue-400 p-2 rounded-xl">
+            <div className="absolute top-4 right-4 bg-blue-500/10 text-blue-500 dark:text-blue-400 p-2 rounded-xl">
               <Activity className="w-4 h-4" />
             </div>
-            <h4 className="text-sm font-bold uppercase tracking-wider text-blue-555 dark:text-blue-400">{card2Title}</h4>
+            <h4 className="text-sm font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">{card2Title}</h4>
             <div className="w-12 h-1 bg-blue-500/30 rounded-full mt-1.5 mb-4"></div>
             <ul className="space-y-3">
               {audit.macro.map((item, idx) => (
@@ -144,10 +144,10 @@ export default function StrategicAuditDashboard({ activeReport }) {
 
           {/* Card 3 */}
           <div className="relative group bg-purple-500/5 hover:bg-purple-500/10 border border-purple-500/20 hover:border-purple-500/40 rounded-2xl p-5 transition-all duration-300 shadow-md">
-            <div className="absolute top-4 right-4 bg-purple-500/10 text-purple-505 dark:text-purple-400 p-2 rounded-xl">
+            <div className="absolute top-4 right-4 bg-purple-500/10 text-purple-500 dark:text-purple-400 p-2 rounded-xl">
               {isApple ? <TrendingUp className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
             </div>
-            <h4 className="text-sm font-bold uppercase tracking-wider text-purple-555 dark:text-purple-400">{card3Title}</h4>
+            <h4 className="text-sm font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">{card3Title}</h4>
             <div className="w-12 h-1 bg-purple-500/30 rounded-full mt-1.5 mb-4"></div>
             <ul className="space-y-3">
               {audit.micro.map((item, idx) => (

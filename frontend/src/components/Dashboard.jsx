@@ -18,7 +18,9 @@ import {
   Loader2,
   AlertTriangle,
   ArrowRight,
-  Info
+  Info,
+  Star,
+  Bell
 } from 'lucide-react';
 
 // SVG Sparkline Chart
@@ -501,10 +503,116 @@ export default function Dashboard({
   researching, 
   logs, 
   onTriggerResearch,
-  onDownloadMarkdown
+  onDownloadMarkdown,
+  token
 }) {
   const [companyName, setCompanyName] = useState('');
   const [activeTab, setActiveTab] = useState('summary');
+  const [bookmarks, setBookmarks] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+
+  // Fetch all bookmarked companies
+  const fetchBookmarks = async () => {
+    if (!token) return;
+    try {
+      const response = await fetch('/api/bookmarks', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setBookmarks(data);
+      }
+    } catch (error) {
+      console.error('Error fetching bookmarks:', error);
+    }
+  };
+
+  // Fetch active notifications
+  const fetchNotifications = async () => {
+    if (!token) return;
+    try {
+      const response = await fetch('/api/notifications', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  // Toggle Bookmark state (add or delete)
+  const handleToggleBookmark = async (ticker, companyName) => {
+    if (!token) return;
+    const isAlreadyBookmarked = bookmarks.some(b => b.ticker.toUpperCase() === ticker.toUpperCase());
+    
+    try {
+      if (isAlreadyBookmarked) {
+        const response = await fetch(`/api/bookmarks/${ticker}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          setBookmarks(bookmarks.filter(b => b.ticker.toUpperCase() !== ticker.toUpperCase()));
+        }
+      } else {
+        const response = await fetch('/api/bookmarks', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ ticker, companyName })
+        });
+        if (response.ok) {
+          setBookmarks([...bookmarks, { ticker, companyName }]);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+    }
+  };
+
+  // Trigger manual news poll & summarization (debug endpoint)
+  const handleTriggerManualCrawl = async () => {
+    if (!token) return;
+    try {
+      const response = await fetch('/api/notifications/poll-now', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        alert('Crawl and summarization triggered. Notifications will appear in a moment!');
+        // Refresh notifications after 4 seconds to let Gemini finish summarizing
+        setTimeout(() => {
+          fetchNotifications();
+        }, 4000);
+      }
+    } catch (error) {
+      console.error('Error triggering manual crawl:', error);
+    }
+  };
+
+  // Load bookmarks and setup 30-second notification polling
+  useEffect(() => {
+    fetchBookmarks();
+    fetchNotifications();
+
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [token]);
+
+  // Helper check
+  const isBookmarked = (ticker) => {
+    if (!ticker) return false;
+    return bookmarks.some(b => b.ticker.toUpperCase() === ticker.toUpperCase());
+  };
 
   // Trigger search
   const handleSubmit = (e) => {
@@ -611,8 +719,7 @@ export default function Dashboard({
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-dark-900">
-      {/* Workspace Header Search */}
-      <header className="px-8 py-5 border-b border-slate-200 dark:border-white/5 flex items-center justify-between shrink-0 glass bg-white/70 dark:bg-dark-900/70">
+            <header className="px-8 py-5 border-b border-slate-200 dark:border-white/5 flex items-center justify-between shrink-0 glass bg-white/70 dark:bg-dark-900/70">
         <form onSubmit={handleSubmit} className="w-full max-w-xl">
           <div className="relative">
             <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
@@ -629,24 +736,75 @@ export default function Dashboard({
           </div>
         </form>
 
-        {activeReport && !researching && (
-          <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3.5">
+          {/* Notification Bell Dropdown Container */}
+          <div className="relative">
             <button
-              onClick={() => onDownloadMarkdown(activeReport)}
-              className="flex items-center space-x-2 bg-slate-200 hover:bg-slate-300 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 font-bold py-2.5 px-4 rounded-xl transition-all border border-slate-300 dark:border-white/10 text-sm"
+              onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+              className="relative p-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-white/5 dark:hover:bg-white/10 rounded-xl transition-all border border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300"
+              title="Notifications"
             >
-              <FileDown className="w-4 h-4" />
-              <span>Download MD</span>
+              <Bell className="w-5 h-5" />
+              {notifications.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white font-black text-[9px] w-4.5 h-4.5 flex items-center justify-center rounded-full border border-white dark:border-dark-900 shadow-md animate-pulse">
+                  {notifications.length}
+                </span>
+              )}
             </button>
-            <button
-              onClick={handleDownloadPDF}
-              className="flex items-center space-x-2 bg-emerald-500 hover:bg-emerald-400 text-slate-955 font-bold py-2.5 px-4 rounded-xl transition-all shadow-lg shadow-emerald-500/10 text-sm"
-            >
-              <FileDown className="w-4 h-4 text-slate-950" />
-              <span>Download PDF</span>
-            </button>
+
+            {showNotifDropdown && (
+              <div className="absolute right-0 mt-3 w-80 max-h-96 overflow-y-auto glass-panel border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl z-50 p-4 bg-white dark:bg-dark-850">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/5 mb-3">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Alerts & Summaries</span>
+                  <button 
+                    onClick={handleTriggerManualCrawl}
+                    className="text-[9.5px] text-emerald-500 hover:text-emerald-400 font-bold uppercase tracking-wider transition-all"
+                  >
+                    Poll Now
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {notifications.length === 0 ? (
+                    <div className="text-center py-6 text-xs text-slate-400 dark:text-slate-500">
+                      No active alerts. Pin companies to receive 4-hour summaries.
+                    </div>
+                  ) : (
+                    notifications.map(notif => (
+                      <div key={notif.id} className="p-3 border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/3 rounded-xl text-left">
+                        <div className="flex justify-between items-start">
+                          <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 rounded-md border border-emerald-500/20">{notif.ticker}</span>
+                          <span className="text-[9px] text-slate-400">{new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <h4 className="text-xs font-bold mt-1 text-slate-900 dark:text-white">{notif.title}</h4>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-normal mt-1">{notif.message}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-        )}
+
+          {activeReport && !researching && (
+            <div className="flex items-center space-x-2 border-l border-slate-200 dark:border-white/10 pl-3.5">
+              <button
+                onClick={() => onDownloadMarkdown(activeReport)}
+                className="flex items-center space-x-2 bg-slate-200 hover:bg-slate-350 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 font-bold py-2.5 px-4 rounded-xl transition-all border border-slate-300 dark:border-white/10 text-sm"
+              >
+                <FileDown className="w-4 h-4" />
+                <span>Download MD</span>
+              </button>
+              <button
+                onClick={handleDownloadPDF}
+                className="flex items-center space-x-2 bg-emerald-500 hover:bg-emerald-400 text-slate-955 font-bold py-2.5 px-4 rounded-xl transition-all shadow-lg shadow-emerald-500/10 text-sm"
+              >
+                <FileDown className="w-4 h-4 text-slate-950" />
+                <span>Download PDF</span>
+              </button>
+            </div>
+          )}
+        </div>
       </header>
 
       {/* Main Panel */}
@@ -753,9 +911,18 @@ export default function Dashboard({
                   <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Audit Decision
                   </span>
-                  <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-1 truncate">
-                    {activeReport.companyName}
-                  </h2>
+                  <div className="flex items-center justify-between mt-1">
+                    <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 truncate max-w-[80%]">
+                      {activeReport.companyName}
+                    </h2>
+                    <button
+                      onClick={() => handleToggleBookmark(activeReport.ticker, activeReport.companyName)}
+                      className="p-1.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition-all text-amber-500"
+                      title={isBookmarked(activeReport.ticker) ? "Remove Bookmark" : "Bookmark Company"}
+                    >
+                      <Star className={`w-5 h-5 ${isBookmarked(activeReport.ticker) ? 'fill-amber-500 text-amber-500' : 'text-slate-400 hover:text-amber-500'}`} />
+                    </button>
+                  </div>
                   <p className="text-xs text-slate-400 mt-0.5">({activeReport.ticker})</p>
                 </div>
                 <div className="my-6">

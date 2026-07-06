@@ -40,6 +40,17 @@ export const initDb = async () => {
     );
   `;
 
+  const createBookmarksTableQuery = `
+    CREATE TABLE IF NOT EXISTS bookmarked_companies (
+      id SERIAL PRIMARY KEY,
+      user_id INT REFERENCES users(id) ON DELETE CASCADE,
+      ticker VARCHAR(20) NOT NULL,
+      company_name VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, ticker)
+    );
+  `;
+
   try {
     console.log('Connecting to PostgreSQL database...');
     // Test connection
@@ -49,6 +60,7 @@ export const initDb = async () => {
     console.log('Initializing tables...');
     await client.query(createUsersTableQuery);
     await client.query(createReportsTableQuery);
+    await client.query(createBookmarksTableQuery);
     console.log('Database tables verified/created successfully.');
     
     client.release();

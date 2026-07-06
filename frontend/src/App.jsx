@@ -249,6 +249,7 @@ ${report.reportSections.investmentThesis || ''}
           logs={logs}
           onTriggerResearch={handleTriggerResearch}
           onDownloadMarkdown={handleDownloadMarkdown}
+          token={token}
         />
       </main>
 

@@ -1070,10 +1070,10 @@ export default function Dashboard({
                     <button
                       key={tab.key}
                       onClick={() => setActiveTab(tab.key)}
-                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 font-semibold text-sm shadow-sm hover:shadow-md hover:scale-[1.01] ${
                         isActive 
                           ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/10' 
-                          : 'bg-white dark:bg-dark-800 hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/5 text-black dark:text-slate-200'
+                          : 'bg-white dark:bg-dark-800 hover:bg-emerald-50 hover:dark:bg-emerald-500/10 border border-slate-200 dark:border-white/5 hover:border-emerald-300 hover:dark:border-emerald-500/30 text-slate-700 dark:text-slate-300 hover:text-emerald-600 hover:dark:text-emerald-400'
                       }`}
                     >
                       <Icon className="w-4 h-4 shrink-0" />

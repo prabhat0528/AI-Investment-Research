@@ -43,6 +43,11 @@ class NotificationQueue {
     // Perform cleanup sweep
     this._sweep(key);
     
+    // Cap queue length to 10 (drop elements past index 9)
+    if (this.store[key].length > 10) {
+      this.store[key] = this.store[key].slice(0, 10);
+    }
+    
     return notification;
   }
 

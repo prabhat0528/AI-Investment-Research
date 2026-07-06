@@ -766,7 +766,7 @@ export default function Dashboard({
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-dark-900">
-            <header className="px-8 py-5 border-b border-slate-200 dark:border-white/5 flex items-center justify-between shrink-0 glass bg-white/70 dark:bg-dark-900/70">
+            <header className="relative z-30 px-8 py-5 border-b border-slate-200 dark:border-white/5 flex items-center justify-between shrink-0 glass bg-white/70 dark:bg-dark-900/70">
         <form onSubmit={handleSubmit} className="w-full max-w-xl">
           <div className="relative">
             <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">

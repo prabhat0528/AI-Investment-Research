@@ -30,7 +30,7 @@ async function generateSummary(ticker, companyName, headlines) {
     return result.response.text().trim();
   } catch (error) {
     console.error(`Gemini Notification Summarizer failed for ${ticker}:`, error);
-    return `Recent market activity compiled for ${companyName} (${ticker}). Key themes focus on regulatory reviews and market volume trends.`;
+    return null;
   }
 }
 
@@ -58,6 +58,11 @@ export async function pollBookmarkedCompaniesNow() {
       
       // 3. Generate summary using the notification Gemini Key
       const summaryText = await generateSummary(ticker, companyName, news);
+      
+      if (!summaryText) {
+        console.warn(`[Notification Poller] Skipped alert for ${ticker} due to Gemini summary generation failure.`);
+        continue;
+      }
       
       // 4. Fetch all users who bookmarked this company
       const usersRes = await query(

@@ -600,10 +600,29 @@ export default function Dashboard({
     }
   };
 
-  // Load bookmarks and setup 30-second notification polling
+  // Load bookmarks, trigger initial crawl, and setup 30-second notification polling
   useEffect(() => {
     fetchBookmarks();
     fetchNotifications();
+
+    // Trigger an initial background crawl on mount to ensure fresh summaries
+    const triggerInitialCrawl = async () => {
+      if (!token) return;
+      try {
+        await fetch('/api/notifications/poll-now', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        // Wait 4 seconds for the crawl to finish, then fetch notifications again
+        setTimeout(() => {
+          fetchNotifications();
+        }, 4000);
+      } catch (e) {
+        console.error('Initial notification crawl failed:', e);
+      }
+    };
+
+    triggerInitialCrawl();
 
     const interval = setInterval(() => {
       fetchNotifications();

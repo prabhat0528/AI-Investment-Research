@@ -230,19 +230,6 @@ ${report.reportSections.investmentThesis || ''}
       {/* Main dashboard body */}
       <main className="flex-1 flex flex-col relative overflow-hidden">
         
-        {/* Floating Dark Mode Toggle */}
-        <button
-          onClick={() => setDarkMode(!darkMode)}
-          className="absolute top-5 right-8 z-20 p-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-white/5 dark:hover:bg-white/10 rounded-xl transition-all border border-slate-300 dark:border-white/10"
-          title="Toggle Theme"
-        >
-          {darkMode ? (
-            <Sun className="w-5 h-5 text-amber-400" />
-          ) : (
-            <Moon className="w-5 h-5 text-slate-700" />
-          )}
-        </button>
-
         <Dashboard 
           activeReport={activeReport}
           researching={researching}
@@ -250,6 +237,8 @@ ${report.reportSections.investmentThesis || ''}
           onTriggerResearch={handleTriggerResearch}
           onDownloadMarkdown={handleDownloadMarkdown}
           token={token}
+          darkMode={darkMode}
+          setDarkMode={setDarkMode}
         />
       </main>
 

@@ -20,7 +20,9 @@ import {
   ArrowRight,
   Info,
   Star,
-  Bell
+  Bell,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 // SVG Sparkline Chart
@@ -504,7 +506,9 @@ export default function Dashboard({
   logs, 
   onTriggerResearch,
   onDownloadMarkdown,
-  token
+  token,
+  darkMode,
+  setDarkMode
 }) {
   const [companyName, setCompanyName] = useState('');
   const [activeTab, setActiveTab] = useState('summary');
@@ -737,6 +741,19 @@ export default function Dashboard({
         </form>
 
         <div className="flex items-center space-x-3.5">
+          {/* Theme Mode Toggle */}
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className="p-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-white/5 dark:hover:bg-white/10 rounded-xl transition-all border border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300"
+            title="Toggle Theme"
+          >
+            {darkMode ? (
+              <Sun className="w-5 h-5 text-amber-400" />
+            ) : (
+              <Moon className="w-5 h-5 text-slate-700" />
+            )}
+          </button>
+
           {/* Notification Bell Dropdown Container */}
           <div className="relative">
             <button

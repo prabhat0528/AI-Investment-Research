@@ -893,7 +893,7 @@ export default function Dashboard({
                   <button
                     key={ticker}
                     onClick={() => handleQuickResearch(ticker)}
-                    className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-dark-800 hover:bg-slate-100 dark:hover:bg-white/5 text-black dark:text-slate-200 transition-all font-semibold text-sm shadow-sm"
+                    className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-dark-800 hover:bg-emerald-50 hover:dark:bg-emerald-500/10 hover:border-emerald-300 hover:dark:border-emerald-500/30 text-slate-700 dark:text-slate-300 hover:text-emerald-600 hover:dark:text-emerald-400 transition-all duration-200 font-semibold text-sm shadow-sm hover:shadow-md hover:scale-[1.02]"
                   >
                     <span>{ticker}</span>
                     <ArrowRight className="w-3.5 h-3.5 opacity-50" />

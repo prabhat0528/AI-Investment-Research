@@ -82,15 +82,15 @@ export default function Sidebar({
             return (
               <div
                 key={report.id}
-                className={`group relative flex items-center justify-between p-3.5 rounded-xl transition-all cursor-pointer ${
+                className={`group flex items-center justify-between p-3.5 rounded-xl transition-all cursor-pointer ${
                   isActive 
                     ? 'bg-white/10 text-white border border-white/10' 
                     : 'hover:bg-white/5 text-slate-300 border border-transparent'
                 }`}
                 onClick={() => onSelectReport(report.id)}
               >
-                <div className="flex items-center space-x-3 truncate">
-                  <div className={`p-2 rounded-lg ${
+                <div className="flex items-center space-x-3 min-w-0 flex-1">
+                  <div className={`p-2 rounded-lg shrink-0 ${
                     report.decision === 'INVEST' 
                       ? 'bg-emerald-500/10 text-emerald-400' 
                       : report.decision === 'PASS'
@@ -99,13 +99,13 @@ export default function Sidebar({
                   }`}>
                     <FileText className="w-4 h-4" />
                   </div>
-                  <div className="truncate">
+                  <div className="min-w-0 flex-1">
                     <div className="font-semibold text-sm truncate flex items-center">
                       <span className="truncate">{report.company_name}</span>
                       <span className="text-xs text-slate-400 ml-1.5 shrink-0">({report.ticker})</span>
                     </div>
                     <div className="text-[10px] text-slate-400 flex items-center space-x-1.5 mt-0.5">
-                      <span className={`font-semibold ${
+                      <span className={`font-semibold shrink-0 ${
                         report.decision === 'INVEST' 
                           ? 'text-emerald-400' 
                           : report.decision === 'PASS'
@@ -115,24 +115,26 @@ export default function Sidebar({
                         {report.decision}
                       </span>
                       <span>•</span>
-                      <span>{date}</span>
+                      <span className="truncate">{date}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Hover Delete Action */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteReport(report.id);
-                  }}
-                  className="opacity-0 group-hover:opacity-100 p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-all absolute right-3 shrink-0"
-                  title="Delete Audit"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {/* Unified Right Control Area: physically separated to prevent any overlap */}
+                <div className="relative w-8 h-8 flex items-center justify-center ml-2 shrink-0">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteReport(report.id);
+                    }}
+                    className="absolute inset-0 flex items-center justify-center bg-red-550/10 hover:bg-red-550/20 text-red-400 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
+                    title="Delete Audit"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
 
-                <ChevronRight className="w-4 h-4 text-slate-600 group-hover:translate-x-0.5 transition-transform opacity-100 group-hover:opacity-0" />
+                  <ChevronRight className="w-4 h-4 text-slate-500 group-hover:opacity-0 transition-opacity duration-200" />
+                </div>
               </div>
             );
           })

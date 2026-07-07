@@ -8,9 +8,8 @@ dotenv.config();
 // Initialize API key rotation pool for agents
 const apiKeys = [
   process.env.GEMINI_API_KEY,
-  process.env.NOTIFICATIONS_GEMINI_KEY,
-  process.env.NOTIFICATIONS_GEMINI_KEY_BACKUP_1,
-  process.env.NOTIFICATIONS_GEMINI_KEY_BACKUP_2
+  process.env.MAIN_GEMINI_KEY_BACKUP_1,
+  process.env.MAIN_GEMINI_KEY_BACKUP_2
 ].filter(key => !!key && key.trim() !== "");
 
 let currentKeyIndex = 0;

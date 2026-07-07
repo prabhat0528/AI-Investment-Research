@@ -189,12 +189,16 @@ export default function StrategicAuditDashboard({ activeReport }) {
               <div>
                 <div className="flex justify-between text-[11px] font-semibold text-slate-955 dark:text-slate-300 mb-1">
                   <span>Operating Margin</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">{(risks.margins.operating * 100).toFixed(2)}%</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                    {risks.margins?.operating !== undefined && risks.margins?.operating !== null
+                      ? `${(Number(risks.margins.operating) * 100).toFixed(2)}%`
+                      : 'N/A'}
+                  </span>
                 </div>
                 <div className="w-full bg-slate-200 dark:bg-white/10 h-2 rounded-full overflow-hidden">
                   <div
                     className={isApple ? "bg-emerald-500 h-full rounded-full" : "bg-red-500 h-full rounded-full"}
-                    style={{ width: `${Math.min(risks.margins.operating * 100 * 2.5, 100)}%` }}
+                    style={{ width: `${Math.min((Number(risks.margins?.operating || 0) * 100) * 2.5, 100)}%` }}
                   ></div>
                 </div>
               </div>
@@ -203,12 +207,16 @@ export default function StrategicAuditDashboard({ activeReport }) {
               <div>
                 <div className="flex justify-between text-[11px] font-semibold text-slate-955 dark:text-slate-300 mb-1">
                   <span>Net Profit Margin</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">{(risks.margins.net * 100).toFixed(2)}%</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                    {risks.margins?.net !== undefined && risks.margins?.net !== null
+                      ? `${(Number(risks.margins.net) * 100).toFixed(2)}%`
+                      : 'N/A'}
+                  </span>
                 </div>
                 <div className="w-full bg-slate-200 dark:bg-white/10 h-2 rounded-full overflow-hidden">
                   <div
                     className={isApple ? "bg-emerald-500 h-full rounded-full" : "bg-red-500 h-full rounded-full"}
-                    style={{ width: `${Math.min(risks.margins.net * 100 * 2.5, 100)}%` }}
+                    style={{ width: `${Math.min((Number(risks.margins?.net || 0) * 100) * 2.5, 100)}%` }}
                   ></div>
                 </div>
               </div>
@@ -235,13 +243,17 @@ export default function StrategicAuditDashboard({ activeReport }) {
               <div className="text-center p-3 bg-slate-100 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-white/10">
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Price to Book</div>
                 <div className="text-2xl font-black text-amber-500 mt-1">
-                  {risks.valuation.pb.toFixed(1)}x
+                  {risks.valuation?.pb !== undefined && risks.valuation?.pb !== null
+                    ? `${Number(risks.valuation.pb).toFixed(1)}x`
+                    : 'N/A'}
                 </div>
               </div>
               <div className="text-center p-3 bg-slate-100 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-white/10">
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Earnings Growth</div>
                 <div className="text-2xl font-black text-slate-700 dark:text-slate-200 mt-1">
-                  {(risks.valuation.growth * 100).toFixed(1)}%
+                  {risks.valuation?.growth !== undefined && risks.valuation?.growth !== null
+                    ? `${(Number(risks.valuation.growth) * 100).toFixed(1)}%`
+                    : 'N/A'}
                 </div>
               </div>
             </div>
@@ -278,11 +290,13 @@ export default function StrategicAuditDashboard({ activeReport }) {
                       fill="none"
                       stroke={isApple ? "#10B981" : "#818CF8"}
                       strokeWidth="3.5"
-                      strokeDasharray={`${Math.min(risks.efficiency.roe * 100, 100)}, 100`}
+                      strokeDasharray={`${Math.min(Number(risks.efficiency?.roe || 0) * 100, 100)}, 100`}
                     />
                   </svg>
                   <span className="absolute text-[10px] font-bold text-slate-900 dark:text-slate-100">
-                    {(risks.efficiency.roe * 100).toFixed(0)}%
+                    {risks.efficiency?.roe !== undefined && risks.efficiency?.roe !== null
+                      ? `${(Number(risks.efficiency.roe) * 100).toFixed(0)}%`
+                      : 'N/A'}
                   </span>
                 </div>
                 <span className="text-[9px] text-slate-500 dark:text-slate-405 font-bold mt-1.5">ROE</span>
@@ -300,11 +314,13 @@ export default function StrategicAuditDashboard({ activeReport }) {
                       fill="none"
                       stroke="#3B82F6"
                       strokeWidth="3.5"
-                      strokeDasharray={`${Math.min(risks.efficiency.roa * 100 * (isApple ? 1.5 : 2), 100)}, 100`}
+                      strokeDasharray={`${Math.min(Number(risks.efficiency?.roa || 0) * 100 * (isApple ? 1.5 : 2), 100)}, 100`}
                     />
                   </svg>
                   <span className="absolute text-[10px] font-bold text-slate-900 dark:text-slate-100">
-                    {(risks.efficiency.roa * 100).toFixed(0)}%
+                    {risks.efficiency?.roa !== undefined && risks.efficiency?.roa !== null
+                      ? `${(Number(risks.efficiency.roa) * 100).toFixed(0)}%`
+                      : 'N/A'}
                   </span>
                 </div>
                 <span className="text-[9px] text-slate-500 dark:text-slate-405 font-bold mt-1.5">ROA</span>

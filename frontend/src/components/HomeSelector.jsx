@@ -18,67 +18,11 @@ export default function HomeSelector({ user, onSelectView, onLogout, darkMode, s
   ];
 
   return (
-    <div className="min-h-screen w-full flex flex-col justify-between bg-slate-50 dark:bg-dark-900 transition-colors duration-300 relative overflow-hidden font-sans">
+    <div className="w-full flex-1 flex flex-col justify-between bg-slate-50 dark:bg-dark-900 transition-colors duration-300 relative overflow-hidden font-sans">
       
       {/* Background glowing gradients */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-500/10 dark:bg-emerald-500/5 blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-500/10 dark:bg-blue-500/5 blur-[120px] pointer-events-none"></div>
-
-      {/* 1. Header Area with Ticker */}
-      <div className="w-full shrink-0">
-        {/* Running Stock Marquee */}
-        <div className="w-full bg-slate-900 text-white py-2 overflow-hidden select-none border-b border-white/5 flex items-center relative z-20">
-          <div className="flex animate-marquee whitespace-nowrap space-x-12 px-4 text-xs font-mono font-bold tracking-wider">
-            {tickerData.concat(tickerData).map((stock, idx) => (
-              <span key={idx} className="inline-flex items-center space-x-2">
-                <span>{stock.ticker}</span>
-                <span className="text-slate-300">${stock.price}</span>
-                <span className={stock.isUp ? 'text-emerald-400' : 'text-red-400'}>
-                  {stock.isUp ? '▲' : '▼'} {stock.change}
-                </span>
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Header Toolbar */}
-        <header className="px-8 py-5 flex items-center justify-between border-b border-slate-200 dark:border-white/5 relative z-20 glass bg-white/70 dark:bg-dark-900/70">
-          <div className="flex items-center space-x-3">
-            <div className="bg-emerald-500 text-slate-950 p-2 rounded-xl shadow-lg shadow-emerald-500/20">
-              <LineChart className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-lg font-black tracking-wider text-slate-950 dark:text-white uppercase">
-                QuantTerminal
-              </h1>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold">
-                Intelligence Suite
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            {/* Theme Toggle */}
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition-all text-slate-700 dark:text-slate-300"
-              title="Toggle Theme"
-            >
-              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
-
-            {/* Logout */}
-            <button
-              onClick={onLogout}
-              className="flex items-center space-x-2 px-4 py-2.5 rounded-xl border border-red-200 dark:border-red-500/10 hover:bg-red-50 dark:hover:bg-red-500/5 text-red-600 dark:text-red-400 transition-all font-semibold text-sm"
-              title="Log Out"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Log Out</span>
-            </button>
-          </div>
-        </header>
-      </div>
 
       {/* 2. Main Choice Grid */}
       <main className="flex-1 flex flex-col justify-center items-center px-6 py-12 relative z-10">

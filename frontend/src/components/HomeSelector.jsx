@@ -18,7 +18,7 @@ export default function HomeSelector({ user, onSelectView, onLogout, darkMode, s
   ];
 
   return (
-    <div className="w-full flex-1 flex flex-col justify-between bg-slate-50 dark:bg-dark-900 transition-colors duration-300 relative overflow-hidden font-sans">
+    <div className="w-full flex-1 flex flex-col justify-between bg-slate-50 dark:bg-dark-900 transition-colors duration-300 relative overflow-y-auto font-sans">
       
       {/* Background glowing gradients */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-500/10 dark:bg-emerald-500/5 blur-[120px] pointer-events-none"></div>

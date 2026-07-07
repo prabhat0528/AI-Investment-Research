@@ -246,7 +246,7 @@ ${report.reportSections.investmentThesis || ''}
         {/* Header Toolbar */}
         <header className="px-8 py-3.5 flex items-center justify-between">
           <div className="flex items-center space-x-3 cursor-pointer select-none" onClick={() => setView('menu')}>
-            <div className="bg-emerald-50 text-slate-955 p-2 rounded-xl shadow-lg shadow-emerald-500/20">
+            <div className="bg-emerald-500 text-slate-950 p-2 rounded-xl shadow-lg shadow-emerald-500/20">
               <LineChart className="w-5 h-5" />
             </div>
             <div>

@@ -16,10 +16,10 @@ export default function MarkdownContent({ content }) {
       remarkPlugins={[remarkGfm]}
       components={{
         p({ children }) {
-          return <p className="mb-4 text-black dark:text-slate-200 text-sm leading-relaxed">{children}</p>;
+          return <p className="mb-4 text-black dark:text-white text-sm leading-relaxed">{children}</p>;
         },
         li({ children }) {
-          return <li className="mb-1.5 text-black dark:text-slate-200 text-sm leading-relaxed list-disc list-inside">{children}</li>;
+          return <li className="mb-1.5 text-black dark:text-white text-sm leading-relaxed list-disc list-inside">{children}</li>;
         },
         ul({ children }) {
           return <ul className="mb-4 pl-4 space-y-1">{children}</ul>;
@@ -71,14 +71,14 @@ export default function MarkdownContent({ content }) {
         table({ children }) {
           return (
             <div className="my-6 overflow-x-auto rounded-2xl border border-slate-250 dark:border-white/10 shadow-md bg-white dark:bg-dark-900/40">
-              <table className="w-full border-collapse text-xs md:text-sm text-black dark:text-slate-200">
+              <table className="w-full border-collapse text-xs md:text-sm text-black dark:text-white">
                 {children}
               </table>
             </div>
           );
         },
         thead({ children }) {
-          return <thead className="bg-slate-105 dark:bg-white/10 border-b border-slate-250 dark:border-white/20 text-left font-bold text-black dark:text-slate-100 uppercase tracking-wider text-[10px]">{children}</thead>;
+          return <thead className="bg-slate-105 dark:bg-white/10 border-b border-slate-250 dark:border-white/20 text-left font-bold text-black dark:text-white uppercase tracking-wider text-[10px]">{children}</thead>;
         },
         tbody({ children }) {
           return <tbody className="divide-y divide-slate-200 dark:divide-white/10">{children}</tbody>;
@@ -90,7 +90,7 @@ export default function MarkdownContent({ content }) {
           return <th className="p-3.5 font-bold border border-slate-200 dark:border-white/10 text-black dark:text-white">{children}</th>;
         },
         td({ children }) {
-          return <td className="p-3.5 font-medium border border-slate-200 dark:border-white/10 text-black dark:text-slate-200">{children}</td>;
+          return <td className="p-3.5 font-medium border border-slate-200 dark:border-white/10 text-black dark:text-white">{children}</td>;
         }
       }}
     >

@@ -130,7 +130,7 @@ export default function MarketChat({ token, onBackToMenu }) {
                   <div className={`p-5 rounded-2xl border ${
                     isUser 
                       ? 'bg-slate-100/80 dark:bg-slate-800/80 border-slate-200 dark:border-white/5 text-slate-900 dark:text-slate-100' 
-                      : 'bg-white dark:bg-dark-950/40 border-slate-200 dark:border-white/5 shadow-sm text-black dark:text-slate-100'
+                      : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-white/10 shadow-sm text-black dark:text-white'
                   }`}>
                     {isUser ? (
                       <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">{msg.content}</p>

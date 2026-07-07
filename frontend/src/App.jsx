@@ -4,7 +4,7 @@ import Sidebar from './components/Sidebar.jsx';
 import Dashboard from './components/Dashboard.jsx';
 import HomeSelector from './components/HomeSelector.jsx';
 import MarketChat from './components/MarketChat.jsx';
-import { LineChart, Sun, Moon, LogOut } from 'lucide-react';
+import { LineChart, Sun, Moon, LogOut, Bell } from 'lucide-react';
 
 const tickerData = [
   { ticker: 'AAPL', price: '182.30', change: '+1.65%', isUp: true },
@@ -26,6 +26,8 @@ export default function App() {
   const [logs, setLogs] = useState([]);
   const [darkMode, setDarkMode] = useState(true);
   const [view, setView] = useState('menu');
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
 
   // Sync token to localStorage
   const handleAuthSuccess = (newToken, newUser) => {
@@ -72,6 +74,69 @@ export default function App() {
 
   useEffect(() => {
     fetchHistory();
+  }, [token]);
+
+  // Fetch active notifications
+  const fetchNotifications = async () => {
+    if (!token) return;
+    try {
+      const response = await fetch('/api/notifications', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  // Trigger manual news poll & summarization
+  const handleTriggerManualCrawl = async () => {
+    if (!token) return;
+    try {
+      const response = await fetch('/api/notifications/poll-now', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        alert('Crawl and summarization triggered. Notifications will appear in a moment!');
+        // Refresh notifications after 4 seconds to let Gemini finish summarizing
+        setTimeout(() => {
+          fetchNotifications();
+        }, 4000);
+      }
+    } catch (error) {
+      console.error('Error triggering manual crawl:', error);
+    }
+  };
+
+  // Setup notification polling
+  useEffect(() => {
+    if (!token) return;
+    fetchNotifications();
+
+    const triggerInitialCrawl = async () => {
+      try {
+        await fetch('/api/notifications/poll-now', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        setTimeout(() => {
+          fetchNotifications();
+        }, 4000);
+      } catch (e) {
+        console.error('Initial notification crawl failed:', e);
+      }
+    };
+    triggerInitialCrawl();
+
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 30000); // Poll every 30 seconds
+
+    return () => clearInterval(interval);
   }, [token]);
 
   // Select a specific report from sidebar
@@ -278,6 +343,55 @@ ${report.reportSections.investmentThesis || ''}
             >
               {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
             </button>
+
+            {/* Notification Bell Dropdown Container */}
+            <div className="relative">
+              <button
+                onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+                className="relative p-2 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition-all text-slate-700 dark:text-slate-300"
+                title="Notifications"
+              >
+                <Bell className="w-4 h-4" />
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white font-black text-[9px] w-4.5 h-4.5 flex items-center justify-center rounded-full border border-white dark:border-dark-900 shadow-md animate-pulse">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+
+              {showNotifDropdown && (
+                <div className="absolute right-0 mt-3 w-80 max-h-96 overflow-y-auto glass border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl z-50 p-4 bg-white dark:bg-dark-800">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/5 mb-3">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-205">Alerts & Summaries</span>
+                    <button 
+                      onClick={handleTriggerManualCrawl}
+                      className="text-[9.5px] text-emerald-500 hover:text-emerald-400 font-bold uppercase tracking-wider transition-all"
+                    >
+                      Poll Now
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {notifications.length === 0 ? (
+                      <div className="text-center py-6 text-xs text-slate-400 dark:text-slate-500">
+                        No active alerts. Pin companies to receive 4-hour summaries.
+                      </div>
+                    ) : (
+                      notifications.map(notif => (
+                        <div key={notif.id} className="p-3 border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/3 rounded-xl text-left">
+                          <div className="flex justify-between items-start">
+                            <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 rounded-md border border-emerald-500/20">{notif.ticker}</span>
+                            <span className="text-[9px] text-slate-400">{new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          <h4 className="text-xs font-bold mt-1 text-black dark:text-white">{notif.title}</h4>
+                          <p className="text-[11px] text-black dark:text-slate-350 leading-normal mt-1">{notif.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Logout */}
             <button

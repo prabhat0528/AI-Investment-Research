@@ -28,9 +28,49 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [tickers, setTickers] = useState(tickerData);
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Fetch real-time quotes using the Finnhub API
+  const fetchRealtimeTickerData = async () => {
+    const apiKey = 'd96coc1r01qs3pe0dj70d96coc1r01qs3pe0dj7g';
+    const symbols = ['AAPL', 'TSLA', 'MSFT', 'NVDA', 'AMD', 'AMZN', 'GOOGL'];
+    try {
+      const updatedTickers = await Promise.all(
+        symbols.map(async (symbol) => {
+          try {
+            const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.c) {
+                const price = data.c.toFixed(2);
+                const dp = data.dp || 0;
+                const change = `${dp >= 0 ? '+' : ''}${dp.toFixed(2)}%`;
+                const isUp = dp >= 0;
+                return { ticker: symbol, price, change, isUp };
+              }
+            }
+          } catch (e) {
+            console.error(`Error fetching Finnhub quote for ${symbol}:`, e);
+          }
+          // Fallback to initial static data item
+          return tickerData.find(t => t.ticker === symbol);
+        })
+      );
+      setTickers(updatedTickers.filter(Boolean));
+    } catch (error) {
+      console.error('Error in real-time ticker fetch:', error);
+    }
+  };
+
+  // Run initial fetch and set up 10-minute polling interval
+  useEffect(() => {
+    fetchRealtimeTickerData();
+    const interval = setInterval(fetchRealtimeTickerData, 10 * 60 * 1000); // 10 minutes
+    return () => clearInterval(interval);
+  }, []);
 
   // Sync token to localStorage
   const handleAuthSuccess = (newToken, newUser) => {
@@ -308,7 +348,7 @@ ${report.reportSections.investmentThesis || ''}
                   {/* Stock Marquee */}
                   <div className="w-full bg-slate-900 text-white py-2 overflow-hidden select-none border-b border-white/5 flex items-center relative z-20">
                     <div className="flex animate-marquee whitespace-nowrap space-x-12 px-4 text-xs font-mono font-bold tracking-wider">
-                      {tickerData.concat(tickerData).map((stock, idx) => (
+                      {tickers.concat(tickers).map((stock, idx) => (
                         <span key={idx} className="inline-flex items-center space-x-2">
                           <span>{stock.ticker}</span>
                           <span className="text-slate-300">${stock.price}</span>

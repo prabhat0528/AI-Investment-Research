@@ -5,39 +5,76 @@ import { searchTicker, getQuoteData, getFinancialStatements, getRecentNews, getH
 
 dotenv.config();
 
-// Initialize Gemini API Client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-// Using gemini-2.5-flash or gemini-3.5-flash as requested by system environment, fallback to gemini-1.5-flash
-const modelName = "gemini-3.5-flash"; 
+// Initialize API key rotation pool for agents
+const apiKeys = [
+  process.env.GEMINI_API_KEY,
+  process.env.NOTIFICATIONS_GEMINI_KEY,
+  process.env.NOTIFICATIONS_GEMINI_KEY_BACKUP_1,
+  process.env.NOTIFICATIONS_GEMINI_KEY_BACKUP_2
+].filter(key => !!key && key.trim() !== "");
+
+let currentKeyIndex = 0;
+
+// Initialize model fallback pool
+const modelsPool = [
+  "gemini-3.5-flash",
+  "gemini-2.5-flash",
+  "gemini-1.5-flash",
+  "gemini-1.5-pro"
+];
+let currentModelIndex = 0;
 
 /**
- * Helper to call Gemini model.
+ * Helper to call Gemini model with automatic key rotation and model fallback on 429 rate limits.
  */
 async function callGemini(prompt, responseMimeType = "text/plain") {
-  try {
-    const model = genAI.getGenerativeModel({ 
-      model: modelName,
-      generationConfig: {
-        responseMimeType: responseMimeType
-      }
-    });
-    const result = await model.generateContent(prompt);
-    return result.response.text();
-  } catch (error) {
-    console.error("Gemini API call failed:", error);
-    // If the configured model fails, try fallback
+  if (apiKeys.length === 0) {
+    throw new Error("No Gemini API Keys configured in pool!");
+  }
+
+  const maxRetries = apiKeys.length * modelsPool.length;
+  let lastError = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const keyToUse = apiKeys[currentKeyIndex];
+    const modelToUse = modelsPool[currentModelIndex];
+    
     try {
-      const fallbackModel = genAI.getGenerativeModel({ 
-        model: "gemini-3.5-flash",
-        generationConfig: { responseMimeType }
+      const client = new GoogleGenerativeAI(keyToUse);
+      const model = client.getGenerativeModel({ 
+        model: modelToUse,
+        generationConfig: {
+          responseMimeType: responseMimeType
+        }
       });
-      const result = await fallbackModel.generateContent(prompt);
+      const result = await model.generateContent(prompt);
       return result.response.text();
-    } catch (fallbackError) {
-      console.error("Gemini API fallback also failed:", fallbackError);
-      throw fallbackError;
+    } catch (error) {
+      lastError = error;
+      const errorMsg = String(error.message || error);
+      const isRateLimit = errorMsg.includes("429") || 
+                          errorMsg.toUpperCase().includes("RESOURCE_EXHAUSTED") ||
+                          errorMsg.toUpperCase().includes("QUOTA") ||
+                          (error.status && error.status === 429);
+
+      if (isRateLimit) {
+        console.warn(`[Agent LLM Client] Rate limit hit (429) using model ${modelToUse} at key index ${currentKeyIndex}. Attempting rotation...`);
+        // Rotate key first
+        currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
+        
+        // If we wrapped around keys, fallback to the next model in the pool
+        if (currentKeyIndex === 0) {
+          currentModelIndex = (currentModelIndex + 1) % modelsPool.length;
+          console.warn(`[Agent LLM Client] All keys exhausted for ${modelToUse}. Falling back to next model: ${modelsPool[currentModelIndex]}`);
+        }
+      } else {
+        // Non-rate limit errors fail immediately
+        throw error;
+      }
     }
   }
+
+  throw lastError || new Error("AI rate limit retry loop failed.");
 }
 
 /**

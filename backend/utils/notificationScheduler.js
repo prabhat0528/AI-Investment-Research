@@ -3,13 +3,19 @@ import { query } from "../db.js";
 import { getRecentNews } from "./finance.js";
 import notificationQueue from "./notificationQueue.js";
 
-// Initialize Gemini with the notifications-specific API Key
-const apiKey = process.env.NOTIFICATIONS_GEMINI_KEY || process.env.GEMINI_API_KEY || "";
-const genAI = new GoogleGenerativeAI(apiKey);
+// Initialize API key rotation pool for notifications
+const apiKeys = [
+  process.env.NOTIFICATIONS_GEMINI_KEY,
+  process.env.NOTIFICATIONS_GEMINI_KEY_BACKUP_1,
+  process.env.NOTIFICATIONS_GEMINI_KEY_BACKUP_2,
+  process.env.GEMINI_API_KEY
+].filter(key => !!key && key.trim() !== "");
+
+let currentKeyIndex = 0;
 const modelName = "gemini-3.5-flash"; 
 
 /**
- * Helper to call Gemini model for notifications.
+ * Helper to call Gemini model for notifications. Supports fallback key rotation on 429 quota errors.
  */
 async function generateSummary(ticker, companyName, headlines) {
   if (!headlines || headlines.length === 0) {
@@ -24,14 +30,39 @@ async function generateSummary(ticker, companyName, headlines) {
   Synthesize these headlines into a concise, 2-sentence summary highlighting the most critical recent events, sentiments, or risks affecting the company.
   Output only the 2-sentence summary. Do not add intro/outro headers. Keep it professional, crisp, and direct.`;
 
-  try {
-    const model = genAI.getGenerativeModel({ model: modelName });
-    const result = await model.generateContent(prompt);
-    return result.response.text().trim();
-  } catch (error) {
-    console.error(`Gemini Notification Summarizer failed for ${ticker}:`, error);
+  if (apiKeys.length === 0) {
+    console.error("[Notification Poller] No Gemini API Keys configured in pool!");
     return null;
   }
+
+  const maxRetries = apiKeys.length;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const keyToUse = apiKeys[currentKeyIndex];
+    
+    try {
+      const client = new GoogleGenerativeAI(keyToUse);
+      const model = client.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent(prompt);
+      return result.response.text().trim();
+    } catch (error) {
+      const errorMsg = String(error.message || error);
+      const isRateLimit = errorMsg.includes("429") || 
+                          errorMsg.toUpperCase().includes("RESOURCE_EXHAUSTED") ||
+                          errorMsg.toUpperCase().includes("QUOTA") ||
+                          (error.status && error.status === 429);
+
+      if (isRateLimit && apiKeys.length > 1) {
+        console.warn(`[Notification Poller] Gemini API key index ${currentKeyIndex} hit a rate limit (429). Attempting failover to backup key...`);
+        currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
+        console.log(`[Notification Poller] Rotated to API key index ${currentKeyIndex}. Retrying request...`);
+      } else {
+        console.error(`Gemini Notification Summarizer failed for ${ticker}:`, error);
+        return null;
+      }
+    }
+  }
+
+  return null;
 }
 
 /**

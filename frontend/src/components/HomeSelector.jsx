@@ -1,10 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, MessageSquare, LogOut, Sun, Moon, LineChart, TrendingUp, TrendingDown } from 'lucide-react';
 
 /**
  * Aesthetic landing page shown after login, letting the user choose between the Auditor workspace and the Chat workspace.
  */
-export default function HomeSelector({ user, onSelectView, onLogout, darkMode, setDarkMode }) {
+export default function HomeSelector({ user }) {
+  const navigate = useNavigate();
   
   // Running marquee stock ticker mock data for premium market aesthetics
   const tickerData = [
@@ -59,8 +61,8 @@ export default function HomeSelector({ user, onSelectView, onLogout, darkMode, s
             </div>
 
             <button
-              onClick={() => onSelectView('audit')}
-              className="mt-8 w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all hover:scale-[1.01]"
+              onClick={() => navigate('/audit')}
+              className="mt-8 w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-955 font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all hover:scale-[1.01]"
             >
               Launch Auditor Workspace
             </button>
@@ -83,7 +85,7 @@ export default function HomeSelector({ user, onSelectView, onLogout, darkMode, s
             </div>
 
             <button
-              onClick={() => onSelectView('market-chat')}
+              onClick={() => navigate('/chat')}
               className="mt-8 w-full py-3.5 rounded-2xl bg-blue-500 hover:bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all hover:scale-[1.01]"
             >
               Open Chat Assistant

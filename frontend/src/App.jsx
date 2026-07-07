@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Login from './components/Login.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Dashboard from './components/Dashboard.jsx';
@@ -25,16 +26,19 @@ export default function App() {
   const [currentJobId, setCurrentJobId] = useState(null);
   const [logs, setLogs] = useState([]);
   const [darkMode, setDarkMode] = useState(true);
-  const [view, setView] = useState('menu');
   const [notifications, setNotifications] = useState([]);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Sync token to localStorage
   const handleAuthSuccess = (newToken, newUser) => {
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(newUser));
     setToken(newToken);
-    setUser(newUser);
+    setUser(newToken ? newUser : null);
+    navigate('/');
   };
 
   const handleLogout = () => {
@@ -44,6 +48,7 @@ export default function App() {
     setUser(null);
     setActiveReport(null);
     setReportsList([]);
+    navigate('/login');
   };
 
   // Toggle Dark Mode
@@ -56,7 +61,7 @@ export default function App() {
     }
   }, [darkMode]);
 
-  // Fetch report history list on load/login
+  // Fetch report generation history
   const fetchHistory = async () => {
     if (!token) return;
     try {
@@ -282,183 +287,188 @@ ${report.reportSections.investmentThesis || ''}
     document.body.removeChild(link);
   };
 
-  // If not authenticated, render Login/Signup Screen
-  if (!token) {
-    return <Login onAuthSuccess={handleAuthSuccess} />;
-  }
-
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-slate-50 text-slate-900 dark:bg-dark-900 dark:text-slate-100 font-sans transition-colors duration-300">
-      
-      {/* 1. PERSISTENT GLOBAL HEADER TOOLBAR WITH FLOATING TICKER */}
-      <div className="w-full shrink-0 border-b border-slate-200 dark:border-white/5 relative z-40 bg-white/70 dark:bg-dark-900/70 glass">
-        
-        {/* Stock Marquee */}
-        <div className="w-full bg-slate-900 text-white py-2 overflow-hidden select-none border-b border-white/5 flex items-center relative z-20">
-          <div className="flex animate-marquee whitespace-nowrap space-x-12 px-4 text-xs font-mono font-bold tracking-wider">
-            {tickerData.concat(tickerData).map((stock, idx) => (
-              <span key={idx} className="inline-flex items-center space-x-2">
-                <span>{stock.ticker}</span>
-                <span className="text-slate-300">${stock.price}</span>
-                <span className={stock.isUp ? 'text-emerald-400' : 'text-red-400'}>
-                  {stock.isUp ? '▲' : '▼'} {stock.change}
-                </span>
-              </span>
-            ))}
-          </div>
-        </div>
+    <div className={`h-screen flex flex-col overflow-hidden bg-slate-50 text-slate-900 dark:bg-dark-900 dark:text-slate-100 font-sans transition-colors duration-300 ${darkMode ? 'dark' : ''}`}>
+      <Routes>
+        {/* Public Login Route */}
+        <Route 
+          path="/login" 
+          element={!token ? <Login onAuthSuccess={handleAuthSuccess} /> : <Navigate to="/" replace />} 
+        />
 
-        {/* Header Toolbar */}
-        <header className="px-8 py-3.5 flex items-center justify-between">
-          <div className="flex items-center space-x-3 cursor-pointer select-none" onClick={() => setView('menu')}>
-            <div className="bg-emerald-500 text-slate-950 p-2 rounded-xl shadow-lg shadow-emerald-500/20">
-              <LineChart className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-md font-black tracking-wider text-slate-955 dark:text-white uppercase leading-none">
-                QuantTerminal
-              </h1>
-              <p className="text-[9px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold mt-1">
-                Intelligence Suite
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            {/* Quick menu navigation tag */}
-            {view !== 'menu' && (
-              <button
-                onClick={() => setView('menu')}
-                className="text-xs px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300 transition-all font-semibold"
-              >
-                Suite Menu
-              </button>
-            )}
-
-            {/* Theme Toggle */}
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className="p-2 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition-all text-slate-700 dark:text-slate-300"
-              title="Toggle Theme"
-            >
-              {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
-            </button>
-
-            {/* Notification Bell Dropdown Container */}
-            <div className="relative">
-              <button
-                onClick={() => setShowNotifDropdown(!showNotifDropdown)}
-                className="relative p-2 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition-all text-slate-700 dark:text-slate-300"
-                title="Notifications"
-              >
-                <Bell className="w-4 h-4" />
-                {notifications.length > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white font-black text-[9px] w-4.5 h-4.5 flex items-center justify-center rounded-full border border-white dark:border-dark-900 shadow-md animate-pulse">
-                    {notifications.length}
-                  </span>
-                )}
-              </button>
-
-              {showNotifDropdown && (
-                <div className="absolute right-0 mt-3 w-80 max-h-96 overflow-y-auto glass border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl z-50 p-4 bg-white dark:bg-dark-800">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/5 mb-3">
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-205">Alerts & Summaries</span>
-                    <button 
-                      onClick={handleTriggerManualCrawl}
-                      className="text-[9.5px] text-emerald-500 hover:text-emerald-400 font-bold uppercase tracking-wider transition-all"
-                    >
-                      Poll Now
-                    </button>
+        {/* Protected Application Routes */}
+        <Route 
+          path="/*" 
+          element={
+            token ? (
+              <div className="h-screen flex flex-col overflow-hidden w-full">
+                {/* 1. PERSISTENT GLOBAL HEADER TOOLBAR WITH FLOATING TICKER */}
+                <div className="w-full shrink-0 border-b border-slate-200 dark:border-white/5 relative z-40 bg-white/70 dark:bg-dark-900/70 glass">
+                  
+                  {/* Stock Marquee */}
+                  <div className="w-full bg-slate-900 text-white py-2 overflow-hidden select-none border-b border-white/5 flex items-center relative z-20">
+                    <div className="flex animate-marquee whitespace-nowrap space-x-12 px-4 text-xs font-mono font-bold tracking-wider">
+                      {tickerData.concat(tickerData).map((stock, idx) => (
+                        <span key={idx} className="inline-flex items-center space-x-2">
+                          <span>{stock.ticker}</span>
+                          <span className="text-slate-300">${stock.price}</span>
+                          <span className={stock.isUp ? 'text-emerald-400' : 'text-red-400'}>
+                            {stock.isUp ? '▲' : '▼'} {stock.change}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="space-y-3">
-                    {notifications.length === 0 ? (
-                      <div className="text-center py-6 text-xs text-slate-400 dark:text-slate-500">
-                        No active alerts. Pin companies to receive 4-hour summaries.
+                  {/* Header Toolbar */}
+                  <header className="px-8 py-3.5 flex items-center justify-between">
+                    <div className="flex items-center space-x-3 cursor-pointer select-none" onClick={() => navigate('/')}>
+                      <div className="bg-emerald-500 text-slate-955 p-2 rounded-xl shadow-lg shadow-emerald-500/20">
+                        <LineChart className="w-5 h-5" />
                       </div>
-                    ) : (
-                      notifications.map(notif => (
-                        <div key={notif.id} className="p-3 border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/3 rounded-xl text-left">
-                          <div className="flex justify-between items-start">
-                            <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 rounded-md border border-emerald-500/20">{notif.ticker}</span>
-                            <span className="text-[9px] text-slate-400">{new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <div>
+                        <h1 className="text-md font-black tracking-wider text-slate-955 dark:text-white uppercase leading-none">
+                          QuantTerminal
+                        </h1>
+                        <p className="text-[9px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold mt-1">
+                          Intelligence Suite
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-3">
+                      {/* Quick menu navigation tag */}
+                      {location.pathname !== '/' && (
+                        <button
+                          onClick={() => navigate('/')}
+                          className="text-xs px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300 transition-all font-semibold"
+                        >
+                          Suite Menu
+                        </button>
+                      )}
+
+                      {/* Theme Toggle */}
+                      <button
+                        onClick={() => setDarkMode(!darkMode)}
+                        className="p-2 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition-all text-slate-700 dark:text-slate-300"
+                        title="Toggle Theme"
+                      >
+                        {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
+                      </button>
+
+                      {/* Notification Bell Dropdown Container */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+                          className="relative p-2 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition-all text-slate-700 dark:text-slate-300"
+                          title="Notifications"
+                        >
+                          <Bell className="w-4 h-4" />
+                          {notifications.length > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white font-black text-[9px] w-4.5 h-4.5 flex items-center justify-center rounded-full border border-white dark:border-dark-900 shadow-md animate-pulse">
+                              {notifications.length}
+                            </span>
+                          )}
+                        </button>
+
+                        {showNotifDropdown && (
+                          <div className="absolute right-0 mt-3 w-80 max-h-96 overflow-y-auto glass border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl z-50 p-4 bg-white dark:bg-dark-800">
+                            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/5 mb-3">
+                              <span className="text-xs font-bold text-slate-800 dark:text-slate-205">Alerts & Summaries</span>
+                              <button 
+                                onClick={handleTriggerManualCrawl}
+                                className="text-[9.5px] text-emerald-500 hover:text-emerald-400 font-bold uppercase tracking-wider transition-all"
+                              >
+                                Poll Now
+                              </button>
+                            </div>
+
+                            <div className="space-y-3">
+                              {notifications.length === 0 ? (
+                                <div className="text-center py-6 text-xs text-slate-400 dark:text-slate-500">
+                                  No active alerts. Pin companies to receive 4-hour summaries.
+                                </div>
+                              ) : (
+                                notifications.map(notif => (
+                                  <div key={notif.id} className="p-3 border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/3 rounded-xl text-left">
+                                    <div className="flex justify-between items-start">
+                                      <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 rounded-md border border-emerald-500/20">{notif.ticker}</span>
+                                      <span className="text-[9px] text-slate-400">{new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    </div>
+                                    <h4 className="text-xs font-bold mt-1 text-black dark:text-white">{notif.title}</h4>
+                                    <p className="text-[11px] text-black dark:text-slate-350 leading-normal mt-1">{notif.message}</p>
+                                  </div>
+                                ))
+                              )}
+                            </div>
                           </div>
-                          <h4 className="text-xs font-bold mt-1 text-black dark:text-white">{notif.title}</h4>
-                          <p className="text-[11px] text-black dark:text-slate-350 leading-normal mt-1">{notif.message}</p>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                        )}
+                      </div>
+
+                      {/* Logout */}
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center space-x-2 px-3 py-2 rounded-xl border border-red-200 dark:border-red-500/10 hover:bg-red-50 dark:hover:bg-red-500/5 text-red-600 dark:text-red-400 transition-all font-semibold text-sm"
+                        title="Log Out"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Log Out</span>
+                      </button>
+                    </div>
+                  </header>
                 </div>
-              )}
-            </div>
 
-            {/* Logout */}
-            <button
-              onClick={handleLogout}
-              className="flex items-center space-x-2 px-3 py-2 rounded-xl border border-red-200 dark:border-red-500/10 hover:bg-red-50 dark:hover:bg-red-500/5 text-red-600 dark:text-red-400 transition-all font-semibold text-sm"
-              title="Log Out"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Log Out</span>
-            </button>
-          </div>
-        </header>
-      </div>
+                {/* 2. ACTIVE VIEW AREA */}
+                <div className="flex-1 flex overflow-hidden relative z-10 w-full">
+                  <Routes>
+                    <Route path="/" element={<HomeSelector user={user} />} />
+                    <Route path="/chat" element={<MarketChat token={token} onBackToMenu={() => navigate('/')} />} />
+                    <Route 
+                      path="/audit" 
+                      element={
+                        <div className="flex-1 flex overflow-hidden w-full">
+                          {/* Sidebar navigation */}
+                          <Sidebar 
+                            reportsList={reportsList}
+                            activeReport={activeReport}
+                            onSelectReport={handleSelectReport}
+                            onDeleteReport={handleDeleteReport}
+                            onNewResearch={() => {
+                              setActiveReport(null);
+                              setResearching(false);
+                              setCurrentJobId(null);
+                            }}
+                            onLogout={handleLogout}
+                            onBackToMenu={() => navigate('/')}
+                            user={user}
+                          />
 
-      {/* 2. ACTIVE VIEW AREA */}
-      <div className="flex-1 flex overflow-hidden relative z-10">
-        
-        {view === 'menu' && (
-          <HomeSelector 
-            user={user} 
-            onSelectView={setView} 
-          />
-        )}
-
-        {view === 'market-chat' && (
-          <MarketChat 
-            token={token} 
-            onBackToMenu={() => setView('menu')}
-          />
-        )}
-
-        {view === 'audit' && (
-          <div className="flex-1 flex overflow-hidden">
-            {/* Sidebar navigation */}
-            <Sidebar 
-              reportsList={reportsList}
-              activeReport={activeReport}
-              onSelectReport={handleSelectReport}
-              onDeleteReport={handleDeleteReport}
-              onNewResearch={() => {
-                setActiveReport(null);
-                setResearching(false);
-                setCurrentJobId(null);
-              }}
-              onLogout={handleLogout}
-              onBackToMenu={() => setView('menu')}
-              user={user}
-            />
-
-            {/* Main dashboard body */}
-            <main className="flex-1 flex flex-col relative overflow-hidden">
-              <Dashboard 
-                activeReport={activeReport}
-                researching={researching}
-                logs={logs}
-                onTriggerResearch={handleTriggerResearch}
-                onDownloadMarkdown={handleDownloadMarkdown}
-                token={token}
-                darkMode={darkMode}
-                setDarkMode={setDarkMode}
-              />
-            </main>
-          </div>
-        )}
-
-      </div>
-
+                          {/* Main dashboard body */}
+                          <main className="flex-1 flex flex-col relative overflow-hidden">
+                            <Dashboard 
+                              activeReport={activeReport}
+                              researching={researching}
+                              logs={logs}
+                              onTriggerResearch={handleTriggerResearch}
+                              onDownloadMarkdown={handleDownloadMarkdown}
+                              token={token}
+                              darkMode={darkMode}
+                              setDarkMode={setDarkMode}
+                            />
+                          </main>
+                        </div>
+                      } 
+                    />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </div>
+              </div>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } 
+        />
+      </Routes>
     </div>
   );
 }

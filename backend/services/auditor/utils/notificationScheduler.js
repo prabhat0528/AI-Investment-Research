@@ -27,8 +27,8 @@ async function generateSummary(ticker, companyName, headlines) {
   You are given the following recent news headlines for ${companyName} (${ticker}):
   ${headlinesList}
 
-  Synthesize these headlines into a concise, 2-sentence summary highlighting the most critical recent events, sentiments, or risks affecting the company.
-  Output only the 2-sentence summary. Do not add intro/outro headers. Keep it professional, crisp, and direct.`;
+  Synthesize these headlines into a highly concise list of exactly 2 key bullet points highlighting the most critical recent events, sentiments, or risks affecting the company.
+  Output only the bullet points (starting with "-"). Do not add any introductory or introductory headers. Keep it professional, crisp, and direct.`;
 
   if (apiKeys.length === 0) {
     console.error("[Notification Poller] No Gemini API Keys configured in pool!");

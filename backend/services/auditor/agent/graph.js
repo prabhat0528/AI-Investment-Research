@@ -571,7 +571,7 @@ async function reportGeneratorNode(state) {
     # Investment Memo: ${companyName} (${ticker})
     
     ## 1. Summary
-    [A robust Executive Summary highlighting the final decision: ${decision} and core rationale]
+    [A highly concise, bulleted Executive Summary list (using 3-4 bullet points starting with "-") highlighting the final decision: ${decision} and core rationale. Keep it crisp, direct, and brief.]
     
     ## 2. Financial Analysis
     [Evaluation of key metrics, profit margins, capital structures, and statements]

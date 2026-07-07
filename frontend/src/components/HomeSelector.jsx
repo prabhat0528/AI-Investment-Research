@@ -29,7 +29,7 @@ export default function HomeSelector({ user, onSelectView, onLogout, darkMode, s
         <div className="max-w-4xl w-full text-center space-y-4 mb-12">
           <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 font-bold text-xs uppercase tracking-wider mb-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-            <span>Welcome, {user?.name || 'Investor'}</span>
+            <span>Welcome, {user?.username || 'Investor'}</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-black tracking-tight text-slate-950 dark:text-white leading-tight">
             Institutional Investment Auditing & Market Intelligence

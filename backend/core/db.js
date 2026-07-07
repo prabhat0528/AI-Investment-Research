@@ -12,6 +12,11 @@ const pool = new Pool({
   }
 });
 
+// Prevent unhandled pg-pool connection crashes on transient network drops
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle PostgreSQL client:', err.message || err);
+});
+
 // Helper function to run a query
 export const query = (text, params) => pool.query(text, params);
 

@@ -1,13 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { initDb } from './db.js';
+import { initDb } from './core/db.js';
 import authRouter from './routes/auth.js';
-import researchRouter from './routes/research.js';
-import bookmarksRouter from './routes/bookmarks.js';
-import notificationsRouter from './routes/notifications.js';
-import chatRouter from './routes/chat.js';
-import { startNotificationScheduler } from './utils/notificationScheduler.js';
+import researchRouter from './services/auditor/routes/research.js';
+import bookmarksRouter from './services/auditor/routes/bookmarks.js';
+import notificationsRouter from './services/auditor/routes/notifications.js';
+import chatRouter from './services/chat/routes/chat.js';
+import { startNotificationScheduler } from './services/auditor/utils/notificationScheduler.js';
 
 dotenv.config();
 

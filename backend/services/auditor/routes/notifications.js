@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticateToken } from './auth.js';
+import { authenticateToken } from '../../../core/middleware/auth.js';
 import notificationQueue from '../utils/notificationQueue.js';
 import { pollBookmarkedCompaniesNow } from '../utils/notificationScheduler.js';
 

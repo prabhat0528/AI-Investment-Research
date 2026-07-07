@@ -1,7 +1,7 @@
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
-import { searchTicker, getQuoteData, getFinancialStatements, getRecentNews, getHistoricalPrices } from "../utils/finance.js";
+import { searchTicker, getQuoteData, getFinancialStatements, getRecentNews, getHistoricalPrices } from "../../../core/finance.js";
 
 dotenv.config();
 

@@ -1,6 +1,6 @@
 import express from 'express';
-import { query } from '../db.js';
-import { authenticateToken } from './auth.js';
+import { query } from '../../../core/db.js';
+import { authenticateToken } from '../../../core/middleware/auth.js';
 import { graph } from '../agent/graph.js';
 
 const router = express.Router();

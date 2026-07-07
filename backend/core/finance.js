@@ -1,8 +1,6 @@
 import YahooFinance from 'yahoo-finance2';
 const yahooFinance = new YahooFinance();
 
-
-
 /**
  * Searches for a ticker symbol given a company name.
  * Returns the ticker symbol and name of the company.
@@ -24,7 +22,6 @@ export async function searchTicker(companyName) {
     };
   } catch (error) {
     console.error(`Error searching ticker for "${companyName}":`, error);
-    // Return a fallback format or throw
     throw error;
   }
 }
@@ -126,12 +123,10 @@ export async function getFinancialStatements(ticker) {
  */
 export async function getRecentNews(ticker, companyName) {
   try {
-    // Search Yahoo Finance for the ticker or name
     const searchQuery = `${ticker} ${companyName}`;
     const result = await yahooFinance.search(searchQuery);
 
     if (!result.news || result.news.length === 0) {
-      // Fallback: search just ticker
       const fallbackResult = await yahooFinance.search(ticker);
       if (!fallbackResult.news) return [];
       return fallbackResult.news.map(item => ({

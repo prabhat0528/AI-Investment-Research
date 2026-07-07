@@ -1,7 +1,7 @@
 import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { searchTicker, getQuoteData, getFinancialStatements } from '../utils/finance.js';
-import { authenticateToken } from './auth.js';
+import { searchTicker, getQuoteData, getFinancialStatements } from '../../../core/finance.js';
+import { authenticateToken } from '../../../core/middleware/auth.js';
 
 const router = express.Router();
 
@@ -77,7 +77,6 @@ router.post('/chat', authenticateToken, async (req, res) => {
   }
 
   try {
-    // 1. Ask Gemini to extract mentioned companies/tickers
     const extractionPrompt = `User message: "${message}"
     Extract all company names, stock tickers, or industry terms that could map to stock symbols mentioned in the query.
     Return only a JSON array of strings, e.g. ["Apple", "Tesla", "Nvidia"].
@@ -100,7 +99,6 @@ router.post('/chat', authenticateToken, async (req, res) => {
       console.warn('[Chat Agent] Failed to parse extracted tickers:', err);
     }
 
-    // 2. Fetch real-time data for extracted entities
     let contextData = [];
     if (Array.isArray(candidates) && candidates.length > 0) {
       for (const name of candidates) {
@@ -123,7 +121,6 @@ router.post('/chat', authenticateToken, async (req, res) => {
       }
     }
 
-    // 3. Construct Context String
     let contextString = "";
     if (contextData.length > 0) {
       contextString = `Here is real-time financial data fetched from Yahoo Finance for the mentioned companies:\n` + 
@@ -142,7 +139,6 @@ router.post('/chat', authenticateToken, async (req, res) => {
         `).join("\n---\n");
     }
 
-    // 4. Assemble the conversational prompt
     const formattedHistory = (history || [])
       .map(h => `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.content}`)
       .join("\n");

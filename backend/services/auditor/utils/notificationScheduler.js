@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { query } from "../db.js";
-import { getRecentNews } from "./finance.js";
+import { query } from "../../../core/db.js";
+import { getRecentNews } from "../../../core/finance.js";
 import notificationQueue from "./notificationQueue.js";
 
 // Initialize API key rotation pool for notifications
@@ -72,7 +72,6 @@ export async function pollBookmarkedCompaniesNow() {
   console.log('[Notification Poller] Starting background crawl of bookmarked tickers...');
   
   try {
-    // 1. Fetch all distinct bookmarked companies
     const bookmarksRes = await query(
       `SELECT DISTINCT ticker, company_name as "companyName" FROM bookmarked_companies`
     );
@@ -84,10 +83,7 @@ export async function pollBookmarkedCompaniesNow() {
       const { ticker, companyName } = bookmark;
       console.log(`[Notification Poller] Scanning news for ${companyName} (${ticker})...`);
 
-      // 2. Fetch recent news
       const news = await getRecentNews(ticker, companyName);
-      
-      // 3. Generate summary using the notification Gemini Key
       const summaryText = await generateSummary(ticker, companyName, news);
       
       if (!summaryText) {
@@ -95,13 +91,11 @@ export async function pollBookmarkedCompaniesNow() {
         continue;
       }
       
-      // 4. Fetch all users who bookmarked this company
       const usersRes = await query(
         `SELECT user_id FROM bookmarked_companies WHERE ticker = $1`,
         [ticker]
       );
 
-      // 5. Push summary notification into their Redis-like queue
       usersRes.rows.forEach(row => {
         notificationQueue.push(row.user_id, {
           ticker,
@@ -124,12 +118,10 @@ export async function pollBookmarkedCompaniesNow() {
  * Starts the 4-hour background scheduler.
  */
 export function startNotificationScheduler() {
-  // 4 hours in milliseconds = 14,400,000 ms
   const intervalMs = 4 * 60 * 60 * 1000;
   
   console.log(`[Notification Poller] Initializing background polling worker (Scanning every 4 hours)...`);
   
-  // Run polling immediately on startup
   setTimeout(() => {
     pollBookmarkedCompaniesNow();
   }, 5000); // 5 seconds grace period after DB initialization

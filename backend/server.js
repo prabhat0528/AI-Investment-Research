@@ -6,6 +6,7 @@ import authRouter from './routes/auth.js';
 import researchRouter from './routes/research.js';
 import bookmarksRouter from './routes/bookmarks.js';
 import notificationsRouter from './routes/notifications.js';
+import chatRouter from './routes/chat.js';
 import { startNotificationScheduler } from './utils/notificationScheduler.js';
 
 dotenv.config();
@@ -22,6 +23,7 @@ app.use('/api/auth', authRouter);
 app.use('/api', researchRouter);
 app.use('/api', bookmarksRouter);
 app.use('/api', notificationsRouter);
+app.use('/api', chatRouter);
 
 // Basic health check endpoint
 app.get('/health', (req, res) => {

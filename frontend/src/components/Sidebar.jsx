@@ -6,7 +6,8 @@ import {
   TrendingUp, 
   FileText, 
   ChevronRight,
-  Plus
+  Plus,
+  Home
 } from 'lucide-react';
 
 export default function Sidebar({ 
@@ -16,6 +17,7 @@ export default function Sidebar({
   onDeleteReport, 
   onNewResearch,
   onLogout,
+  onBackToMenu,
   user
 }) {
   return (
@@ -35,6 +37,15 @@ export default function Sidebar({
             </p>
           </div>
         </div>
+        {onBackToMenu && (
+          <button
+            onClick={onBackToMenu}
+            className="p-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-all text-slate-400 hover:text-white"
+            title="Suite Menu"
+          >
+            <Home className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* New Research Button */}

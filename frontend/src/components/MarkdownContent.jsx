@@ -16,10 +16,10 @@ export default function MarkdownContent({ content }) {
       remarkPlugins={[remarkGfm]}
       components={{
         p({ children }) {
-          return <p className="mb-4 text-slate-950 dark:text-slate-200 text-sm leading-relaxed">{children}</p>;
+          return <p className="mb-4 text-black dark:text-slate-200 text-sm leading-relaxed">{children}</p>;
         },
         li({ children }) {
-          return <li className="mb-1.5 text-slate-955 dark:text-slate-200 text-sm leading-relaxed list-disc list-inside">{children}</li>;
+          return <li className="mb-1.5 text-black dark:text-slate-200 text-sm leading-relaxed list-disc list-inside">{children}</li>;
         },
         ul({ children }) {
           return <ul className="mb-4 pl-4 space-y-1">{children}</ul>;
@@ -28,16 +28,16 @@ export default function MarkdownContent({ content }) {
           return <ol className="mb-4 pl-4 list-decimal space-y-1">{children}</ol>;
         },
         h1({ children }) {
-          return <h1 className="text-2xl font-black text-slate-950 dark:text-white mt-6 mb-4">{children}</h1>;
+          return <h1 className="text-2xl font-black text-black dark:text-white mt-6 mb-4">{children}</h1>;
         },
         h2({ children }) {
-          return <h2 className="text-xl font-bold text-slate-955 dark:text-white mt-5 mb-3">{children}</h2>;
+          return <h2 className="text-xl font-bold text-black dark:text-white mt-5 mb-3">{children}</h2>;
         },
         h3({ children }) {
-          return <h3 className="text-lg font-bold text-slate-955 dark:text-white mt-4 mb-2">{children}</h3>;
+          return <h3 className="text-lg font-bold text-black dark:text-white mt-4 mb-2">{children}</h3>;
         },
         h4({ children }) {
-          return <h4 className="text-md font-bold text-slate-955 dark:text-white mt-3 mb-1.5">{children}</h4>;
+          return <h4 className="text-md font-bold text-black dark:text-white mt-3 mb-1.5">{children}</h4>;
         },
         code({ node, inline, className, children, ...props }) {
           const text = String(children).replace(/\n$/, '');
@@ -71,14 +71,14 @@ export default function MarkdownContent({ content }) {
         table({ children }) {
           return (
             <div className="my-6 overflow-x-auto rounded-2xl border border-slate-250 dark:border-white/10 shadow-md bg-white dark:bg-dark-900/40">
-              <table className="w-full border-collapse text-xs md:text-sm text-slate-950 dark:text-slate-200">
+              <table className="w-full border-collapse text-xs md:text-sm text-black dark:text-slate-200">
                 {children}
               </table>
             </div>
           );
         },
         thead({ children }) {
-          return <thead className="bg-slate-105 dark:bg-white/10 border-b border-slate-250 dark:border-white/20 text-left font-bold text-slate-955 dark:text-slate-100 uppercase tracking-wider text-[10px]">{children}</thead>;
+          return <thead className="bg-slate-105 dark:bg-white/10 border-b border-slate-250 dark:border-white/20 text-left font-bold text-black dark:text-slate-100 uppercase tracking-wider text-[10px]">{children}</thead>;
         },
         tbody({ children }) {
           return <tbody className="divide-y divide-slate-200 dark:divide-white/10">{children}</tbody>;
@@ -87,10 +87,10 @@ export default function MarkdownContent({ content }) {
           return <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors duration-150">{children}</tr>;
         },
         th({ children }) {
-          return <th className="p-3.5 font-bold border border-slate-200 dark:border-white/10 text-slate-955 dark:text-white">{children}</th>;
+          return <th className="p-3.5 font-bold border border-slate-200 dark:border-white/10 text-black dark:text-white">{children}</th>;
         },
         td({ children }) {
-          return <td className="p-3.5 font-medium border border-slate-200 dark:border-white/10 text-slate-955 dark:text-slate-200">{children}</td>;
+          return <td className="p-3.5 font-medium border border-slate-200 dark:border-white/10 text-black dark:text-slate-200">{children}</td>;
         }
       }}
     >

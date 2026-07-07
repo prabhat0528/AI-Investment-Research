@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Login from './components/Login.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Dashboard from './components/Dashboard.jsx';
-import { Sun, Moon } from 'lucide-react';
+import HomeSelector from './components/HomeSelector.jsx';
+import MarketChat from './components/MarketChat.jsx';
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
@@ -13,6 +14,7 @@ export default function App() {
   const [currentJobId, setCurrentJobId] = useState(null);
   const [logs, setLogs] = useState([]);
   const [darkMode, setDarkMode] = useState(true);
+  const [view, setView] = useState('menu');
 
   // Sync token to localStorage
   const handleAuthSuccess = (newToken, newUser) => {
@@ -209,6 +211,30 @@ ${report.reportSections.investmentThesis || ''}
     return <Login onAuthSuccess={handleAuthSuccess} />;
   }
 
+  // Render Suite Selector Landing Menu
+  if (view === 'menu') {
+    return (
+      <HomeSelector 
+        user={user} 
+        onSelectView={setView} 
+        onLogout={handleLogout} 
+        darkMode={darkMode}
+        setDarkMode={setDarkMode}
+      />
+    );
+  }
+
+  // Render Conversational Market Assistant View
+  if (view === 'market-chat') {
+    return (
+      <MarketChat 
+        token={token} 
+        onBackToMenu={() => setView('menu')}
+      />
+    );
+  }
+
+  // Default: Render Auditor Agent Workspace
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-900 dark:bg-dark-900 dark:text-slate-100 font-sans transition-colors duration-300">
       
@@ -224,6 +250,7 @@ ${report.reportSections.investmentThesis || ''}
           setCurrentJobId(null);
         }}
         onLogout={handleLogout}
+        onBackToMenu={() => setView('menu')}
         user={user}
       />
 

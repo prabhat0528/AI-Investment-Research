@@ -397,7 +397,7 @@ ${report.reportSections.investmentThesis || ''}
                         {showNotifDropdown && (
                           <div className="absolute right-0 mt-3 w-80 max-h-96 overflow-y-auto glass border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl z-50 p-4 bg-white dark:bg-dark-800">
                             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/5 mb-3">
-                              <span className="text-xs font-bold text-slate-800 dark:text-slate-205">Alerts & Summaries</span>
+                              <span className="text-xs font-bold text-slate-800 dark:text-white">Alerts & Summaries</span>
                               <button 
                                 onClick={handleTriggerManualCrawl}
                                 className="text-[9.5px] text-emerald-500 hover:text-emerald-400 font-bold uppercase tracking-wider transition-all"
@@ -409,7 +409,7 @@ ${report.reportSections.investmentThesis || ''}
                             <div className="space-y-3">
                               {notifications.length === 0 ? (
                                 <div className="text-center py-6 text-xs text-slate-400 dark:text-slate-500">
-                                  No active alerts. Pin companies to receive 4-hour summaries.
+                                  No new notifications
                                 </div>
                               ) : (
                                 notifications.map(notif => (

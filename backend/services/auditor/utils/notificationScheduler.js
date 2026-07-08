@@ -19,7 +19,7 @@ const modelName = "gemini-3.5-flash";
  */
 async function generateSummary(ticker, companyName, headlines) {
   if (!headlines || headlines.length === 0) {
-    return `No recent news articles were found for ${companyName} (${ticker}) in the last 4 hours. Market indicators remain unchanged.`;
+    return null;
   }
 
   const headlinesList = headlines.slice(0, 5).map(h => `- ${h.title} (${h.publisher})`).join("\n");
@@ -93,7 +93,7 @@ export async function pollBookmarkedCompaniesNow() {
       const summaryText = await generateSummary(ticker, companyName, news);
       
       if (!summaryText) {
-        console.warn(`[Notification Poller] Skipped alert for ${ticker} due to Gemini summary generation failure.`);
+        console.log(`[Notification Poller] No new news articles found for ${ticker} in the last 4 hours. Skipping dispatch.`);
         continue;
       }
       

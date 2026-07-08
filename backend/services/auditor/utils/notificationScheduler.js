@@ -27,8 +27,14 @@ async function generateSummary(ticker, companyName, headlines) {
   You are given the following recent news headlines for ${companyName} (${ticker}):
   ${headlinesList}
 
-  Synthesize these headlines into a highly concise list of exactly 2 key bullet points highlighting the most critical recent events, sentiments, or risks affecting the company.
-  Output only the bullet points (starting with "-"). Do not add any introductory or introductory headers. Keep it professional, crisp, and direct.`;
+  Synthesize these headlines into a highly concise list of exactly 2 key points highlighting the most critical recent events, sentiments, or risks affecting the company.
+  
+  Format Rules:
+  - Do NOT use markdown symbols (no "**", "#", "*", or markdown headers).
+  - Format as 2 lines, each starting with an appropriate, vibrant emoji (e.g. 📈, 📉, ⚠️, 📰, 🚀, 💼) to represent the topic, followed by the text.
+  - Do not use dashes or bullet markers, just begin directly with the emoji.
+  - Keep each point extremely short, sharp, and limited to a single concise sentence.
+  - Output only the 2 lines. Do not add any introductory or introductory headers. Keep it professional, crisp, and direct.`;
 
   if (apiKeys.length === 0) {
     console.error("[Notification Poller] No Gemini API Keys configured in pool!");

@@ -330,12 +330,12 @@ ${report.reportSections.investmentThesis || ''}
                   
                   {/* Stock Marquee */}
                   <div className="w-full bg-slate-900 text-white py-2 overflow-hidden select-none border-b border-white/5 flex items-center relative z-20">
-                    <div className="flex animate-marquee whitespace-nowrap space-x-12 px-4 text-xs font-mono font-bold tracking-wider">
-                      {tickers.concat(tickers).map((stock, idx) => (
-                        <span key={idx} className="inline-flex items-center space-x-2">
+                    <div className="flex animate-marquee whitespace-nowrap text-xs font-mono font-bold tracking-wider">
+                      {tickers.concat(tickers).concat(tickers).concat(tickers).map((stock, idx) => (
+                        <span key={idx} className="inline-flex items-center mr-16">
                           <span>{stock.ticker}</span>
-                          <span className="text-slate-300">${stock.price}</span>
-                          <span className={stock.isUp ? 'text-emerald-400' : 'text-red-400'}>
+                          <span className="text-slate-300 ml-2">${stock.price}</span>
+                          <span className={`inline-flex items-center ml-2 ${stock.isUp ? 'text-emerald-400' : 'text-red-400'}`}>
                             {stock.isUp ? '▲' : '▼'} {stock.change}
                           </span>
                         </span>

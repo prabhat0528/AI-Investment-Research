@@ -456,6 +456,11 @@ async function valuationAgentNode(state) {
     
     const prompt = `You are a Chief Investment Officer and Valuation Expert. You must decide whether to INVEST, PASS, or HOLD the stock of ${ticker}.
     
+    CRITICAL ANTI-HALLUCINATION REQUIREMENT:
+    - Base your evaluation ONLY on the provided financial, risk, and sentiment inputs.
+    - Do NOT invent, assume, or extrapolate metrics, figures, or facts that are not listed in the Inputs section.
+    - If any value in the Inputs is missing, null, or undefined, state that it is unavailable in your reasoning instead of generating a fictitious value.
+    
     Inputs:
     - Current Price: ${quote.currentPrice} ${quote.currency}
     - P/E Ratio: ${quote.trailingPE} (Trailing), ${quote.forwardPE} (Forward)
@@ -561,6 +566,11 @@ async function reportGeneratorNode(state) {
 
     const prompt = `You are a Financial Writer. Synthesize all analysis into a formal, highly-detailed, and beautifully formatted markdown investment memo.
     
+    CRITICAL ANTI-HALLUCINATION REQUIREMENT:
+    - Base the report strictly and factually on the provided Section Data inputs.
+    - Do NOT invent, assume, or extrapolate figures, historical events, backlogs, or statistics that are not explicitly present in the inputs.
+    - If any section data is missing, note the limitation in the report factually instead of generating fictitious details.
+    
     Company: ${companyName} (${ticker})
     Decision: ${decision}
     Reasoning: ${reasoning}
@@ -647,13 +657,24 @@ builder.addNode("sentiment_agent", sentimentAgentNode);
 builder.addNode("valuation_agent", valuationAgentNode);
 builder.addNode("report_generator", reportGeneratorNode);
 
-// Define edges
+// Define edges (Parallel Multi-Branch Workflow)
 builder.setEntryPoint("planner");
-builder.addEdge("planner", "financial_agent");
+
+// Use conditional routing to fan out from planner to both branches concurrently
+builder.addConditionalEdges(
+  "planner",
+  () => ["financial_agent", "news_agent"]
+);
+
+// Branch A: Financial analysis & Debt/Risk audit
 builder.addEdge("financial_agent", "risk_agent");
-builder.addEdge("risk_agent", "news_agent");
+builder.addEdge("risk_agent", "valuation_agent"); // Link Branch A to Valuation
+
+// Branch B: Scraping news & evaluating NLP Sentiment
 builder.addEdge("news_agent", "sentiment_agent");
-builder.addEdge("sentiment_agent", "valuation_agent");
+builder.addEdge("sentiment_agent", "valuation_agent"); // Link Branch B to Valuation
+
+// Final compilation
 builder.addEdge("valuation_agent", "report_generator");
 builder.setFinishPoint("report_generator");
 

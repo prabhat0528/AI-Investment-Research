@@ -33,35 +33,18 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Fetch real-time quotes using the Finnhub API
+  // Fetch real-time quotes using our backend proxy (bypasses browser SSL and CORS blocks)
   const fetchRealtimeTickerData = async () => {
-    const apiKey = import.meta.env.VITE_FINNHUB_API_KEY
-    const symbols = ['AAPL', 'TSLA', 'MSFT', 'NVDA', 'AMD', 'AMZN', 'GOOGL'];
     try {
-      const updatedTickers = await Promise.all(
-        symbols.map(async (symbol) => {
-          try {
-            const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`);
-            if (res.ok) {
-              const data = await res.json();
-              if (data.c) {
-                const price = data.c.toFixed(2);
-                const dp = data.dp || 0;
-                const change = `${dp >= 0 ? '+' : ''}${dp.toFixed(2)}%`;
-                const isUp = dp >= 0;
-                return { ticker: symbol, price, change, isUp };
-              }
-            }
-          } catch (e) {
-            console.error(`Error fetching Finnhub quote for ${symbol}:`, e);
-          }
-          // Fallback to initial static data item
-          return tickerData.find(t => t.ticker === symbol);
-        })
-      );
-      setTickers(updatedTickers.filter(Boolean));
+      const res = await fetch('/api/tickers/quotes');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          setTickers(data);
+        }
+      }
     } catch (error) {
-      console.error('Error in real-time ticker fetch:', error);
+      console.error('Error fetching real-time quotes from backend proxy:', error);
     }
   };
 

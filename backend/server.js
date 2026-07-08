@@ -11,6 +11,9 @@ import { startNotificationScheduler } from './services/auditor/utils/notificatio
 
 dotenv.config();
 
+// Globally bypass self-signed SSL issues (common in proxy/development environments)
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -24,6 +27,38 @@ app.use('/api', researchRouter);
 app.use('/api', bookmarksRouter);
 app.use('/api', notificationsRouter);
 app.use('/api', chatRouter);
+
+// Finnhub Real-time quotes proxy endpoint to bypass client-side SSL issues
+app.get('/api/tickers/quotes', async (req, res) => {
+  const apiKey = process.env.VITE_FINNHUB_API_KEY || 'd96coc1r01qs3pe0dj70d96coc1r01qs3pe0dj7g';
+  const symbols = ['AAPL', 'TSLA', 'MSFT', 'NVDA', 'AMD', 'AMZN', 'GOOGL'];
+  try {
+    const quotes = await Promise.all(
+      symbols.map(async (symbol) => {
+        try {
+          const response = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.c) {
+              const price = data.c.toFixed(2);
+              const dp = data.dp || 0;
+              const change = `${dp >= 0 ? '+' : ''}${dp.toFixed(2)}%`;
+              const isUp = dp >= 0;
+              return { ticker: symbol, price, change, isUp };
+            }
+          }
+        } catch (e) {
+          console.error(`Error fetching Finnhub quote for ${symbol} on backend:`, e.message || e);
+        }
+        return null;
+      })
+    );
+    res.json(quotes.filter(Boolean));
+  } catch (error) {
+    console.error('Error fetching quotes from Finnhub:', error);
+    res.status(500).json({ error: 'Failed to fetch quotes.' });
+  }
+});
 
 // Basic health check endpoint
 app.get('/health', (req, res) => {

@@ -45,13 +45,18 @@ async function callChatGemini(prompt) {
     } catch (error) {
       lastError = error;
       const errorMsg = String(error.message || error);
-      const isRateLimit = errorMsg.includes("429") || 
+      const isTransient = errorMsg.includes("429") || 
+                          errorMsg.includes("503") ||
+                          errorMsg.includes("500") ||
+                          errorMsg.includes("fetch failed") ||
                           errorMsg.toUpperCase().includes("RESOURCE_EXHAUSTED") ||
                           errorMsg.toUpperCase().includes("QUOTA") ||
-                          (error.status && error.status === 429);
+                          errorMsg.toUpperCase().includes("TEMPORARY") ||
+                          errorMsg.toUpperCase().includes("OVERLOAD") ||
+                          (error.status && [429, 500, 503].includes(error.status));
 
-      if (isRateLimit) {
-        console.warn(`[Chat LLM Client] Rate limit hit (429) using model ${modelToUse} at key index ${currentKeyIndex}. Rotating key...`);
+      if (isTransient) {
+        console.warn(`[Chat LLM Client] Transient error hit (${error.status || 'unknown'}) using model ${modelToUse} at key index ${currentKeyIndex}: ${errorMsg.substring(0, 100)}. Rotating key...`);
         currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
         if (currentKeyIndex === 0) {
           currentModelIndex = (currentModelIndex + 1) % modelsPool.length;
@@ -165,6 +170,13 @@ router.post('/chat', authenticateToken, async (req, res) => {
     res.json({ response: assistantResponse.trim() });
   } catch (error) {
     console.error('Chat error:', error);
+    const errorMsg = String(error.message || error);
+    if (errorMsg.includes("429") || errorMsg.includes("Too Many Requests") || errorMsg.toUpperCase().includes("QUOTA")) {
+      return res.status(429).json({ error: 'The Gemini API free tier rate limit was exceeded. Please wait a few seconds and try again!' });
+    }
+    if (errorMsg.includes("503") || errorMsg.includes("Service Unavailable") || errorMsg.toUpperCase().includes("OVERLOAD")) {
+      return res.status(503).json({ error: 'The Gemini model is currently overloaded. Please try sending your message again shortly.' });
+    }
     res.status(500).json({ error: 'Server error generating analysis response.' });
   }
 });

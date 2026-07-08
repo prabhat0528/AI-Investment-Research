@@ -49,13 +49,18 @@ async function callGemini(prompt, responseMimeType = "text/plain") {
     } catch (error) {
       lastError = error;
       const errorMsg = String(error.message || error);
-      const isRateLimit = errorMsg.includes("429") || 
+      const isTransient = errorMsg.includes("429") || 
+                          errorMsg.includes("503") ||
+                          errorMsg.includes("500") ||
+                          errorMsg.includes("fetch failed") ||
                           errorMsg.toUpperCase().includes("RESOURCE_EXHAUSTED") ||
                           errorMsg.toUpperCase().includes("QUOTA") ||
-                          (error.status && error.status === 429);
+                          errorMsg.toUpperCase().includes("TEMPORARY") ||
+                          errorMsg.toUpperCase().includes("OVERLOAD") ||
+                          (error.status && [429, 500, 503].includes(error.status));
 
-      if (isRateLimit) {
-        console.warn(`[Agent LLM Client] Rate limit hit (429) using model ${modelToUse} at key index ${currentKeyIndex}. Attempting rotation...`);
+      if (isTransient) {
+        console.warn(`[Agent LLM Client] Transient error hit (${error.status || 'unknown'}) using model ${modelToUse} at key index ${currentKeyIndex}: ${errorMsg.substring(0, 100)}. Attempting rotation...`);
         // Rotate key first
         currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
         
@@ -65,7 +70,7 @@ async function callGemini(prompt, responseMimeType = "text/plain") {
           console.warn(`[Agent LLM Client] All keys exhausted for ${modelToUse}. Falling back to next model: ${modelsPool[currentModelIndex]}`);
         }
       } else {
-        // Non-rate limit errors fail immediately
+        // Non-transient errors fail immediately
         throw error;
       }
     }

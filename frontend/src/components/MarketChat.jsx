@@ -53,11 +53,12 @@ export default function MarketChat({ token, onBackToMenu }) {
         const data = await response.json();
         setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
       } else {
-        throw new Error('Failed to generate response.');
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Failed to generate response.');
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error retrieving data. Please verify your internet connection or try again shortly.' }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: `Sorry, I encountered an error: ${error.message}` }]);
     } finally {
       setLoading(false);
     }

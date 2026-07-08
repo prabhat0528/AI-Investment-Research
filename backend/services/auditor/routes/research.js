@@ -5,6 +5,42 @@ import { graph } from '../agent/graph.js';
 
 const router = express.Router();
 
+class LRUCache {
+  constructor(limit = 10) {
+    this.limit = limit;
+    this.cache = new Map();
+  }
+
+  get(key) {
+    const k = String(key);
+    if (!this.cache.has(k)) {
+      return null;
+    }
+    const val = this.cache.get(k);
+    this.cache.delete(k);
+    this.cache.set(k, val);
+    return val;
+  }
+
+  set(key, value) {
+    const k = String(key);
+    if (this.cache.has(k)) {
+      this.cache.delete(k);
+    } else if (this.cache.size >= this.limit) {
+      const lruKey = this.cache.keys().next().value;
+      this.cache.delete(lruKey);
+    }
+    this.cache.set(k, value);
+  }
+
+  delete(key) {
+    const k = String(key);
+    this.cache.delete(k);
+  }
+}
+
+const reportCache = new LRUCache(10);
+
 // Helper to extract sections from Markdown report
 function extractSection(markdown, sectionHeader) {
   if (!markdown) return "";
@@ -195,6 +231,27 @@ router.post('/research', authenticateToken, async (req, res) => {
           [JSON.stringify(reportSections), reportId]
         );
 
+        // Auto-populate the newly finished report directly into the cache
+        const completedRes = await query(
+          'SELECT id, user_id, company_name, ticker, decision, reasoning, report_sections, logs, created_at FROM research_reports WHERE id = $1',
+          [reportId]
+        );
+        if (completedRes.rows.length > 0) {
+          const report = completedRes.rows[0];
+          reportCache.set(String(reportId), {
+            id: report.id,
+            userId: report.user_id,
+            companyName: report.company_name,
+            ticker: report.ticker,
+            decision: report.decision,
+            reasoning: report.reasoning,
+            reportSections: report.report_sections,
+            logs: report.logs,
+            createdAt: report.created_at
+          });
+          console.log(`[Cache Auto-Populate] Saved newly finished report ${reportId} directly into LRU cache.`);
+        }
+
       } catch (err) {
         console.error(`Agent run error for report ${reportId}:`, err);
         const failLogs = [{ agent: "System", status: "failed", message: err.message, timestamp: new Date() }];
@@ -293,9 +350,21 @@ router.get('/research/report/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
 
+  // 1. Check cache hit
+  const cachedReport = reportCache.get(id);
+  if (cachedReport) {
+    if (cachedReport.userId === userId) {
+      console.log(`[Cache Hit] Serving report ${id} from memory for user ${userId}`);
+      return res.json(cachedReport);
+    } else {
+      console.warn(`[Cache Bypass] Tenant mismatch: report ${id} belongs to user ${cachedReport.userId}, requested by user ${userId}`);
+    }
+  }
+
   try {
+    console.log(`[Cache Miss] Querying report ${id} from database for user ${userId}`);
     const result = await query(
-      'SELECT id, company_name, ticker, decision, reasoning, report_sections, logs, created_at FROM research_reports WHERE id = $1 AND user_id = $2',
+      'SELECT id, user_id, company_name, ticker, decision, reasoning, report_sections, logs, created_at FROM research_reports WHERE id = $1 AND user_id = $2',
       [id, userId]
     );
 
@@ -304,8 +373,9 @@ router.get('/research/report/:id', authenticateToken, async (req, res) => {
     }
 
     const report = result.rows[0];
-    res.json({
+    const reportData = {
       id: report.id,
+      userId: report.user_id,
       companyName: report.company_name,
       ticker: report.ticker,
       decision: report.decision,
@@ -313,7 +383,12 @@ router.get('/research/report/:id', authenticateToken, async (req, res) => {
       reportSections: report.report_sections,
       logs: report.logs,
       createdAt: report.created_at
-    });
+    };
+
+    // 2. Cache the retrieved report details
+    reportCache.set(id, reportData);
+
+    res.json(reportData);
   } catch (error) {
     console.error('Error fetching report details:', error);
     res.status(500).json({ error: 'Server error retrieving report details.' });
@@ -334,6 +409,10 @@ router.delete('/research/report/:id', authenticateToken, async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Report not found or unauthorized.' });
     }
+
+    // Evict the deleted report from the LRU cache
+    reportCache.delete(id);
+    console.log(`[Cache Evict] Evicted deleted report ${id} from cache.`);
 
     res.json({ message: 'Report deleted successfully.', id });
   } catch (error) {

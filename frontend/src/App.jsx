@@ -35,7 +35,7 @@ export default function App() {
 
   // Fetch real-time quotes using the Finnhub API
   const fetchRealtimeTickerData = async () => {
-    const apiKey = import.meta.env.VITE_FINNHUB_API_KEY || 'd96coc1r01qs3pe0dj70d96coc1r01qs3pe0dj7g';
+    const apiKey = import.meta.env.VITE_FINNHUB_API_KEY
     const symbols = ['AAPL', 'TSLA', 'MSFT', 'NVDA', 'AMD', 'AMZN', 'GOOGL'];
     try {
       const updatedTickers = await Promise.all(

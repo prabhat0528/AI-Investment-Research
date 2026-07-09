@@ -25,6 +25,51 @@ export default function MarketChat({ token, onBackToMenu }) {
     scrollToBottom();
   }, [messages, loading]);
 
+  // Fetch conversation history on mount
+  useEffect(() => {
+    const fetchChatHistory = async () => {
+      try {
+        const response = await fetch('/api/chat/history', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.length > 0) {
+            setMessages(data);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching chat history:', error);
+      }
+    };
+    fetchChatHistory();
+  }, [token]);
+
+  // Clear server-side conversation history
+  const handleClearHistory = async () => {
+    if (!window.confirm("Are you sure you want to clear your conversation history?")) return;
+    try {
+      const response = await fetch('/api/chat/clear', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        setMessages([
+          {
+            role: 'assistant',
+            content: 'Conversation memory cleared successfully. What would you like to investigate next?'
+          }
+        ]);
+      }
+    } catch (e) {
+      console.error('Error clearing conversation memory:', e);
+    }
+  };
+
   const handleSendMessage = async (textToSend) => {
     const msg = textToSend || input.trim();
     if (!msg) return;
@@ -100,9 +145,19 @@ export default function MarketChat({ token, onBackToMenu }) {
           </div>
         </div>
 
-        <div className="flex items-center space-x-1.5 text-xs text-blue-500 dark:text-blue-400 font-semibold bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/20">
-          <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-          <span>Real-time Financial Data Connected</span>
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-1.5 text-xs text-blue-500 dark:text-blue-400 font-semibold bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/20">
+            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+            <span>Real-time Financial Data Connected</span>
+          </div>
+
+          <button
+            onClick={handleClearHistory}
+            className="text-xs px-3 py-1.5 rounded-xl border border-red-200 dark:border-red-500/15 hover:bg-red-50 dark:hover:bg-red-500/5 text-red-600 dark:text-red-400 transition-all font-semibold"
+            title="Clear Chat Memory"
+          >
+            Clear Memory
+          </button>
         </div>
       </header>
 

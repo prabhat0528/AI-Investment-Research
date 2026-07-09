@@ -1,9 +1,11 @@
 import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { MemorySaver } from "@langchain/langgraph";
 import { searchTicker, getQuoteData, getFinancialStatements } from '../../../core/finance.js';
 import { authenticateToken } from '../../../core/middleware/auth.js';
 
 const router = express.Router();
+const chatMemory = new MemorySaver();
 
 // Initialize API key rotation pool for chat
 const apiKeys = [
@@ -75,10 +77,29 @@ async function callChatGemini(prompt) {
  * Handles conversational queries with dynamic financial context injection.
  */
 router.post('/chat', authenticateToken, async (req, res) => {
-  const { message, history } = req.body;
+  const { message } = req.body;
+  const userId = req.user.id;
 
   if (!message) {
     return res.status(400).json({ error: 'Message content is required.' });
+  }
+
+  // Retrieve user conversation history from memory saver
+  const config = { configurable: { thread_id: `chat-${userId}` } };
+  let chatHistory = [];
+  try {
+    const checkpoint = await chatMemory.get(config);
+    if (checkpoint && checkpoint.channel_values && checkpoint.channel_values.history) {
+      chatHistory = checkpoint.channel_values.history;
+    }
+  } catch (e) {
+    console.warn('[Chat Agent] Failed to retrieve conversation checkpoint:', e);
+  }
+
+  // Append user message to history
+  chatHistory.push({ role: 'user', content: message });
+  if (chatHistory.length > 16) {
+    chatHistory.shift();
   }
 
   try {
@@ -144,7 +165,7 @@ router.post('/chat', authenticateToken, async (req, res) => {
         `).join("\n---\n");
     }
 
-    const formattedHistory = (history || [])
+    const formattedHistory = (chatHistory || [])
       .map(h => `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.content}`)
       .join("\n");
 
@@ -173,6 +194,21 @@ router.post('/chat', authenticateToken, async (req, res) => {
 
     const assistantResponse = await callChatGemini(chatPrompt);
 
+    // Save assistant response to memory saver
+    chatHistory.push({ role: 'assistant', content: assistantResponse });
+    try {
+      await chatMemory.put(config, {
+        v: 1,
+        id: `chk-${Date.now()}`,
+        ts: new Date().toISOString(),
+        channel_values: { history: chatHistory },
+        channel_versions: {},
+        versions_by_step: {}
+      }, {});
+    } catch (e) {
+      console.warn('[Chat Agent] Failed to save conversation checkpoint:', e);
+    }
+
     res.json({ response: assistantResponse.trim() });
   } catch (error) {
     console.error('Chat error:', error);
@@ -184,6 +220,43 @@ router.post('/chat', authenticateToken, async (req, res) => {
       return res.status(503).json({ error: 'The Gemini model is currently overloaded. Please try sending your message again shortly.' });
     }
     res.status(500).json({ error: 'Server error generating analysis response.' });
+  }
+});
+
+// Clear conversation memory
+router.post('/chat/clear', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  const config = { configurable: { thread_id: `chat-${userId}` } };
+  try {
+    await chatMemory.put(config, {
+      v: 1,
+      id: `chk-clear-${Date.now()}`,
+      ts: new Date().toISOString(),
+      channel_values: { history: [] },
+      channel_versions: {},
+      versions_by_step: {}
+    }, {});
+    res.json({ message: 'Conversation memory cleared successfully.' });
+  } catch (error) {
+    console.error('Error clearing conversation memory:', error);
+    res.status(500).json({ error: 'Failed to clear conversation history.' });
+  }
+});
+
+// GET /api/chat/history - Retrieve user conversation history
+router.get('/chat/history', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  const config = { configurable: { thread_id: `chat-${userId}` } };
+  try {
+    let chatHistory = [];
+    const checkpoint = await chatMemory.get(config);
+    if (checkpoint && checkpoint.channel_values && checkpoint.channel_values.history) {
+      chatHistory = checkpoint.channel_values.history;
+    }
+    res.json(chatHistory);
+  } catch (error) {
+    console.error('Error fetching conversation history:', error);
+    res.status(500).json({ error: 'Failed to retrieve conversation history.' });
   }
 });
 

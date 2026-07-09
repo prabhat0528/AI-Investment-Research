@@ -7,15 +7,15 @@ import { authenticateToken } from '../../../core/middleware/auth.js';
 const router = express.Router();
 const chatMemory = new MemorySaver();
 
-// Initialize API key rotation pool for chat
-const apiKeys = [
+// Initialize API key rotation pool for chat (deduplicated to prevent duplicate key exhaustion)
+const apiKeys = Array.from(new Set([
   process.env.GEMINI_API_KEY,
   process.env.NOTIFICATIONS_GEMINI_KEY,
   process.env.NOTIFICATIONS_GEMINI_KEY_BACKUP_1,
   process.env.NOTIFICATIONS_GEMINI_KEY_BACKUP_2,
   process.env.MAIN_GEMINI_KEY_BACKUP_1,
   process.env.MAIN_GEMINI_KEY_BACKUP_2
-].filter(key => !!key && key.trim() !== "");
+].map(k => k?.trim()).filter(Boolean)));
 
 let currentKeyIndex = 0;
 const modelsPool = [
@@ -59,6 +59,10 @@ async function callChatGemini(prompt) {
 
       if (isTransient) {
         console.warn(`[Chat LLM Client] Transient error hit (${error.status || 'unknown'}) using model ${modelToUse} at key index ${currentKeyIndex}: ${errorMsg.substring(0, 100)}. Rotating key...`);
+        
+        // Wait 500ms before next retry to cool down rate limiting / overloads
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
         if (currentKeyIndex === 0) {
           currentModelIndex = (currentModelIndex + 1) % modelsPool.length;

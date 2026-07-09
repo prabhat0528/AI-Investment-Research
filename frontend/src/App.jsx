@@ -33,30 +33,20 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Fetch real-time quotes directly from Finnhub 
+  // Fetch real-time quotes from our backend proxy, or apply live simulated fluctuations on error/offline
   const fetchRealtimeTickerData = async () => {
-    const apiKey = import.meta.env.VITE_FINNHUB_API_KEY;
-    const symbols = ['AAPL', 'TSLA', 'MSFT', 'NVDA', 'AMD', 'AMZN', 'GOOGL'];
-
     try {
-      const quotes = await Promise.all(
-        symbols.map(async (symbol) => {
-          const response = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`);
-          if (!response.ok) throw new Error("HTTP error");
-          const data = await response.json();
-          if (data && typeof data.c === 'number') {
-            const price = data.c.toFixed(2);
-            const dp = data.dp || 0;
-            const change = `${dp >= 0 ? '+' : ''}${dp.toFixed(2)}%`;
-            const isUp = dp >= 0;
-            return { ticker: symbol, price, change, isUp };
-          }
-          throw new Error("Invalid response schema");
-        })
-      );
-      setTickers(quotes);
+      const res = await fetch('/api/tickers/quotes');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          setTickers(data);
+          return;
+        }
+      }
+      throw new Error("Proxy response failed or empty");
     } catch (error) {
-      // Apply active random-walk fluctuations on the client side to keep the marquee moving dynamically
+      // Apply active random-walk fluctuations on the client side if the backend or API is unreachable
       setTickers((prevTickers) =>
         prevTickers.map((t) => {
           const basePrice = parseFloat(t.price) || 150.00;

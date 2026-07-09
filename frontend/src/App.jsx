@@ -33,9 +33,9 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Fetch real-time quotes directly from Finnhub or apply live simulated fluctuations if blocked (e.g., Sophos proxy)
+  // Fetch real-time quotes directly from Finnhub 
   const fetchRealtimeTickerData = async () => {
-    const apiKey = import.meta.env.VITE_FINNHUB_API_KEY || 'd96coc1r01qs3pe0dj70d96coc1r01qs3pe0dj7g';
+    const apiKey = import.meta.env.VITE_FINNHUB_API_KEY;
     const symbols = ['AAPL', 'TSLA', 'MSFT', 'NVDA', 'AMD', 'AMZN', 'GOOGL'];
 
     try {

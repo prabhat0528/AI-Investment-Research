@@ -30,7 +30,8 @@ app.use('/api', chatRouter);
 
 // Finnhub Real-time quotes proxy endpoint to bypass client-side SSL issues
 app.get('/api/tickers/quotes', async (req, res) => {
-  const apiKey = process.env.VITE_FINNHUB_API_KEY || 'd96coc1r01qs3pe0dj70d96coc1r01qs3pe0dj7g';
+  const apiKey = process.env.VITE_FINNHUB_API_KEY;
+  console.log(apiKey);
   const symbols = ['AAPL', 'TSLA', 'MSFT', 'NVDA', 'AMD', 'AMZN', 'GOOGL'];
   try {
     const quotes = await Promise.all(
@@ -48,7 +49,7 @@ app.get('/api/tickers/quotes', async (req, res) => {
             }
           }
         } catch (e) {
-          console.error(`Error fetching Finnhub quote for ${symbol} on backend:`, e.message || e);
+          console.error(`Error fetching Finnhub quote for ${symbol} on backend:`, e.cause?.message || e.cause || e.message || e);
         }
         return null;
       })

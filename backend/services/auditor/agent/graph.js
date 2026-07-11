@@ -742,10 +742,10 @@ async function valuationAgentNode(state) {
     1. "decision": must be exactly one of: "INVEST", "PASS", "HOLD"
     2. "reasoning": a concise 2-sentence summary of the main driver behind the decision.
     3. "valuationAnalysis": a detailed paragraph showing your valuation assessment (evaluating PE multiples, growth, and margins).
-    4. "strategicAudit": An object detailing the strategic audit factors:
-       - "headwinds": array of 3 strings (industry headwinds like demand decay, pricing pressure, regulations)
-       - "macro": array of 3 strings (macroeconomic indicators like interest rates, inflation, tariffs)
-       - "micro": array of 3 strings (micro-metrics like margins, segment scales, FSD attach rates, backlog)
+    4. "strategicAudit": An object detailing the strategic audit factors (Do NOT copy generic placeholders or example terms. All descriptions must be customized and highly specific to the target company's business model, industry context, and news headlines):
+       - "headwinds": array of 3 strings detailing the major industry headwinds, barriers, or competitive pressures facing this specific company.
+       - "macro": array of 3 strings detailing the macroeconomic indicators, policies, or market trends impacting this company.
+       - "micro": array of 3 strings detailing the company-specific operational metrics, margins, or micro-challenges of this target business.
     5. "financialRisks": An object detailing the critical financial risks:
        - "margins": object containing "operating" (float, e.g. 0.042) and "net" (float, e.g. 0.0395) profit margins.
        - "valuation": object containing "pb" (float/int, e.g. 18.0) Price-to-Book ratio and "growth" (float, e.g. 0.083) earnings/revenue growth rate.

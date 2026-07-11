@@ -735,11 +735,9 @@ async function valuationAgentNode(state) {
     - Financial Risks Audited: ${riskAnalysis}
 
     Decision Guidelines:
-    - Be objective and balanced. If a company exhibits strong fundamentals (e.g. solid profit margins, high ROE, manageable debt, positive sentiment, or attractive PE multiples), you should choose "INVEST".
-    - If the fundamentals are highly risky, missing critical data points, or poor, you should choose "PASS".
-    - If the outlook is mixed or neutral, you should choose "HOLD".
-
-    Evaluate if the current pricing offers a margin of safety and potential upside.
+    - Be growth-oriented, balanced, and opportunistic. Choose "INVEST" if the company has stable underlying business value, decent market share, positive operating margins, or positive sentiment, even if there are short-term headwinds or a few missing metrics. Do not default to "HOLD" or "PASS" simply because of a single risk factor or data gap.
+    - Choose "PASS" only if there are severe, systemically breaking risks, insolvency threats, or overwhelmingly negative sentiment.
+    - Choose "HOLD" if the company is in a highly balanced transition phase with neither strong positive indicators nor systemically breaking risks.
     Output a JSON object containing:
     1. "decision": must be exactly one of: "INVEST", "PASS", "HOLD"
     2. "reasoning": a concise 2-sentence summary of the main driver behind the decision.

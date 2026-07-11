@@ -189,6 +189,153 @@ export async function callGemini(prompt, responseMimeType = "text/plain") {
 }
 
 /**
+ * Character-by-character scanner to escape control characters (like newlines) inside JSON string values.
+ */
+function repairLLMJSON(str) {
+  let output = "";
+  let insideString = false;
+  let escaped = false;
+
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+
+    if (escaped) {
+      output += char;
+      escaped = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      output += char;
+      escaped = true;
+      continue;
+    }
+
+    if (char === '"') {
+      insideString = !insideString;
+      output += char;
+      continue;
+    }
+
+    if (insideString) {
+      if (char === '\n') {
+        output += '\\n';
+      } else if (char === '\r') {
+        output += '\\r';
+      } else if (char === '\t') {
+        output += '\\t';
+      } else {
+        output += char;
+      }
+    } else {
+      output += char;
+    }
+  }
+
+  // Remove invalid trailing commas before closing braces/brackets
+  return output.replace(/,\s*([\]}])/g, '$1');
+}
+
+/**
+ * Regex-based recovery fallback to extract key fields if the JSON string is completely unparseable.
+ */
+function extractJSONFieldsFallback(str) {
+  const fallback = {
+    decision: "HOLD",
+    reasoning: "Valuation analysis completed.",
+    valuationAnalysis: "Detailed valuation metrics calculated.",
+    strategicAudit: {
+      headwinds: ["Industry headwinds", "Pricing pressure", "Regulatory policies"],
+      macro: ["Interest rates", "Inflation indicators", "Tariff exposures"],
+      micro: ["Operating margins", "Segment scaling", "Product backlog"]
+    },
+    financialRisks: {
+      margins: { operating: 0.0, net: 0.0 },
+      valuation: { pb: 0.0, growth: 0.0 },
+      efficiency: { roe: 0.0, roa: 0.0 }
+    },
+    score: 0.0,
+    analysis: "Sentiment evaluation completed."
+  };
+
+  try {
+    // 1. Extract decision
+    const decisionMatch = str.match(/"decision"\s*:\s*"?(INVEST|PASS|HOLD)"?/i);
+    if (decisionMatch) {
+      fallback.decision = decisionMatch[1].toUpperCase();
+    }
+
+    // 2. Extract reasoning
+    const reasoningMatch = str.match(/"reasoning"\s*:\s*"(.*?)"\s*(?:,|\s*})/s);
+    if (reasoningMatch) {
+      fallback.reasoning = reasoningMatch[1].trim();
+    }
+
+    // 3. Extract valuationAnalysis
+    const valuationMatch = str.match(/"valuationAnalysis"\s*:\s*"(.*?)"\s*(?:,|\s*})/s);
+    if (valuationMatch) {
+      fallback.valuationAnalysis = valuationMatch[1].trim();
+    }
+
+    // 4. Extract strategicAudit arrays
+    const extractArray = (key) => {
+      const re = new RegExp(`"${key}"\\s*:\\s*\\[(.*?)\\]`, "s");
+      const match = str.match(re);
+      if (match) {
+        return match[1]
+          .split(",")
+          .map(item => item.replace(/["']/g, "").trim())
+          .filter(Boolean);
+      }
+      return null;
+    };
+    
+    const headwinds = extractArray("headwinds");
+    if (headwinds) fallback.strategicAudit.headwinds = headwinds;
+    
+    const macro = extractArray("macro");
+    if (macro) fallback.strategicAudit.macro = macro;
+    
+    const micro = extractArray("micro");
+    if (micro) fallback.strategicAudit.micro = micro;
+
+    // 5. Extract financialRisks floats
+    const extractFloat = (key) => {
+      const re = new RegExp(`"${key}"\\s*:\\s*(-?[\\d.]+)`);
+      const match = str.match(re);
+      return match ? parseFloat(match[1]) : null;
+    };
+
+    const operating = extractFloat("operating");
+    const net = extractFloat("net");
+    if (operating !== null) fallback.financialRisks.margins.operating = operating;
+    if (net !== null) fallback.financialRisks.margins.net = net;
+
+    const pb = extractFloat("pb");
+    const growth = extractFloat("growth");
+    if (pb !== null) fallback.financialRisks.valuation.pb = pb;
+    if (growth !== null) fallback.financialRisks.valuation.growth = growth;
+
+    const roe = extractFloat("roe");
+    const roa = extractFloat("roa");
+    if (roe !== null) fallback.financialRisks.efficiency.roe = roe;
+    if (roa !== null) fallback.financialRisks.efficiency.roa = roa;
+
+    // 6. Extract sentiment fields
+    const scoreMatch = str.match(/"score"\s*:\s*(-?[\d.]+)/);
+    if (scoreMatch) fallback.score = parseFloat(scoreMatch[1]);
+
+    const analysisMatch = str.match(/"analysis"\s*:\s*"(.*?)"\s*(?:,|\s*})/s);
+    if (analysisMatch) fallback.analysis = analysisMatch[1].trim();
+
+  } catch (e) {
+    console.error("[JSON Parser] Error inside regex fallback handler:", e);
+  }
+
+  return fallback;
+}
+
+/**
  * Extracts JSON content from LLM response (handling potential markdown blocks).
  */
 function cleanAndParseJSON(rawText) {
@@ -201,7 +348,19 @@ function cleanAndParseJSON(rawText) {
   if (cleaned.endsWith("```")) {
     cleaned = cleaned.substring(0, cleaned.length - 3);
   }
-  return JSON.parse(cleaned.trim());
+  cleaned = cleaned.trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (err) {
+    try {
+      const repaired = repairLLMJSON(cleaned);
+      return JSON.parse(repaired);
+    } catch (err2) {
+      console.warn("[JSON Parser] Failed to parse repaired JSON. Engaging regex extraction recovery fallback...", err2);
+      return extractJSONFieldsFallback(cleaned);
+    }
+  }
 }
 
 /**

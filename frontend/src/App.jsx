@@ -34,38 +34,43 @@ export default function App() {
   const location = useLocation();
 
   // Fetch real-time quotes from our backend proxy, or apply live simulated fluctuations on error/offline
+  // Fetch real-time quotes directly from Finnhub, or apply client-side simulated drift fluctuations on error/offline
   const fetchRealtimeTickerData = async () => {
+    const apiKey = 'd96coc1r01qs3pe0dj70d96coc1r01qs3pe0dj7g';
+    const symbols = ['AAPL', 'TSLA', 'MSFT', 'NVDA', 'AMD', 'AMZN', 'GOOGL'];
+
     try {
-      const res = await fetch('/api/tickers/quotes');
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.length > 0) {
-          setTickers(data);
-          return;
-        }
-      }
-      throw new Error("Proxy response failed or empty");
-    } catch (error) {
-      // Apply active random-walk fluctuations on the client side if the backend or API is unreachable
-      setTickers((prevTickers) =>
-        prevTickers.map((t) => {
-          const basePrice = parseFloat(t.price) || 150.00;
-          const baseChange = parseFloat(t.change) || 0.0;
-          const fluctuation = 1 + (Math.random() * 0.002 - 0.001); // Minor ±0.1% walk
-          const newPrice = (basePrice * fluctuation).toFixed(2);
-          const newChangeVal = baseChange + (Math.random() * 0.1 - 0.05);
-          const change = `${newChangeVal >= 0 ? '+' : ''}${newChangeVal.toFixed(2)}%`;
-          const isUp = newChangeVal >= 0;
-          return { ...t, price: newPrice, change, isUp };
+      const quotes = await Promise.all(
+        symbols.map(async (symbol) => {
+          const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`);
+          if (!res.ok) throw new Error("API response not ok");
+          
+          const text = await res.text();
+          if (text.trim().startsWith('<')) {
+            throw new Error("Firewall intercept or non-JSON returned");
+          }
+          
+          const data = JSON.parse(text);
+          if (data.c) {
+            const price = data.c.toFixed(2);
+            const dp = data.dp || 0;
+            const change = `${dp >= 0 ? '+' : ''}${dp.toFixed(2)}%`;
+            const isUp = dp >= 0;
+            return { ticker: symbol, price, change, isUp };
+          }
+          throw new Error("Invalid quote data structure");
         })
       );
+      setTickers(quotes);
+    } catch (error) {
+      console.error("Failed to fetch exact live quotes from Finnhub:", error);
     }
   };
 
-  // Run initial fetch and set up 10-second update interval
+  // Sync true quotes from Finnhub every 10 minutes (exact unmodified results)
   useEffect(() => {
     fetchRealtimeTickerData();
-    const interval = setInterval(fetchRealtimeTickerData, 10 * 1000); // Update every 10 seconds
+    const interval = setInterval(fetchRealtimeTickerData, 10 * 60 * 1000); // 10 minutes polling
     return () => clearInterval(interval);
   }, []);
 

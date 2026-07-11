@@ -54,7 +54,7 @@ export default function StockChart({ history }) {
       </div>
 
       <div className="relative my-1">
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible">
+        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible">
           <defs>
             <linearGradient id="chart-gradient-up" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#10B981" stopOpacity="0.2" />
@@ -66,15 +66,15 @@ export default function StockChart({ history }) {
             </linearGradient>
           </defs>
 
-          <line x1={padding} y1={padding} x2={width - padding} y2={padding} className="stroke-slate-300/60 dark:stroke-white/10" strokeDasharray="3" strokeWidth="1" />
-          <line x1={padding} y1={height/2} x2={width - padding} y2={height/2} className="stroke-slate-300/60 dark:stroke-white/10" strokeDasharray="3" strokeWidth="1" />
-          <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} className="stroke-slate-300/60 dark:stroke-white/10" strokeDasharray="3" strokeWidth="1" />
+          <line x1={padding} y1={padding} x2={width - padding} y2={padding} stroke="#cbd5e1" strokeDasharray="3" strokeWidth="1" opacity="0.6" />
+          <line x1={padding} y1={height/2} x2={width - padding} y2={height/2} stroke="#cbd5e1" strokeDasharray="3" strokeWidth="1" opacity="0.6" />
+          <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#cbd5e1" strokeDasharray="3" strokeWidth="1" opacity="0.6" />
 
           <polygon points={areaPoints} fill={`url(#${fillColorId})`} />
 
           <polyline
             fill="none"
-            className={strokeClass}
+            stroke={strokeColor}
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"

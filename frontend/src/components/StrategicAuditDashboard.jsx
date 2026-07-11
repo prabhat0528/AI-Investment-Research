@@ -97,7 +97,7 @@ export default function StrategicAuditDashboard({ activeReport }) {
 
         {/* SVG Flowchart Connecting Lines */}
         <div className="hidden md:block w-full max-w-5xl h-16 relative">
-          <svg className="w-full h-full absolute top-0 left-0" viewBox="0 0 1000 64" fill="none">
+          <svg width="1000" height="64" viewBox="0 0 1000 64" fill="none" className="w-full h-full absolute top-0 left-0">
             <path d="M 500 0 L 500 24" stroke="rgba(16,185,129,0.3)" strokeWidth="2" strokeDasharray="4 2" />
             <path d="M 166 24 L 833 24" stroke="rgba(16,185,129,0.3)" strokeWidth="2" />
             <path d="M 166 24 L 166 64" stroke="rgba(239,68,68,0.3)" strokeWidth="2" />
@@ -281,8 +281,8 @@ export default function StrategicAuditDashboard({ activeReport }) {
               {/* Circular Gauge ROE */}
               <div className="flex flex-col items-center">
                 <div className="relative w-16 h-16 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" r="15.9" fill="none" className="stroke-slate-200 dark:stroke-white/10" strokeWidth="3" />
+                  <svg width="64" height="64" viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e2e8f0" strokeWidth="3" />
                     <circle
                       cx="18"
                       cy="18"
@@ -305,8 +305,8 @@ export default function StrategicAuditDashboard({ activeReport }) {
               {/* Circular Gauge ROA */}
               <div className="flex flex-col items-center">
                 <div className="relative w-16 h-16 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" r="15.9" fill="none" className="stroke-slate-200 dark:stroke-white/10" strokeWidth="3" />
+                  <svg width="64" height="64" viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e2e8f0" strokeWidth="3" />
                     <circle
                       cx="18"
                       cy="18"

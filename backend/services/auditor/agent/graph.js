@@ -5,26 +5,44 @@ import { searchTicker, getQuoteData, getFinancialStatements, getRecentNews, getH
 
 dotenv.config();
 
-// Initialize API key rotation pool for agents
-const apiKeys = [
+// Initialize API key rotation pool for agents (deduplicated to prevent duplicate key exhaustion)
+const apiKeys = Array.from(new Set([
   process.env.GEMINI_API_KEY,
+  process.env.NOTIFICATIONS_GEMINI_KEY,
+  process.env.NOTIFICATIONS_GEMINI_KEY_BACKUP_1,
+  process.env.NOTIFICATIONS_GEMINI_KEY_BACKUP_2,
   process.env.MAIN_GEMINI_KEY_BACKUP_1,
   process.env.MAIN_GEMINI_KEY_BACKUP_2
-].filter(key => !!key && key.trim() !== "");
+].map(k => k?.trim()).filter(Boolean)));
 
 let currentKeyIndex = 0;
 
-// Initialize model fallback pool
+export let globalUseGroqBackup = false;
+export let lastGeminiFailureTime = 0;
+export const GEMINI_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes cooldown before retrying Gemini
+
+export function activateGroqBackup() {
+  globalUseGroqBackup = true;
+  lastGeminiFailureTime = Date.now();
+}
+
+// Initialize model fallback pool (gemini-2.0-flash is active and stable)
 const modelsPool = [
   "gemini-3.5-flash",
-  "gemini-2.5-flash"
+  "gemini-2.0-flash"
 ];
 let currentModelIndex = 0;
+
+if (!process.env.GROQ_API_KEY) {
+  console.warn("⚠️ [Agent Startup Warning] GROQ_API_KEY is not defined in environment variables! Groq fallback will not be active.");
+} else {
+  console.log("✅ [Agent Startup] GROQ_API_KEY detected and loaded successfully for backup audit generation.");
+}
 
 /**
  * Helper to call Gemini model with automatic key rotation and model fallback on 429 rate limits.
  */
-async function callGemini(prompt, responseMimeType = "text/plain") {
+async function callGeminiInternal(prompt, responseMimeType = "text/plain") {
   if (apiKeys.length === 0) {
     throw new Error("No Gemini API Keys configured in pool!");
   }
@@ -61,6 +79,10 @@ async function callGemini(prompt, responseMimeType = "text/plain") {
 
       if (isTransient) {
         console.warn(`[Agent LLM Client] Transient error hit (${error.status || 'unknown'}) using model ${modelToUse} at key index ${currentKeyIndex}: ${errorMsg.substring(0, 100)}. Attempting rotation...`);
+        
+        // Add 500ms cooling delay to let rate limits cool down before retrying
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         // Rotate key first
         currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
         
@@ -77,6 +99,93 @@ async function callGemini(prompt, responseMimeType = "text/plain") {
   }
 
   throw lastError || new Error("AI rate limit retry loop failed.");
+}
+
+/**
+ * Helper to call Groq (Llama 3.3 70B) as a secondary backup model for audits.
+ */
+async function callGroqFallback(prompt, responseMimeType = "text/plain") {
+  const groqKey = process.env.GROQ_API_KEY;
+  if (!groqKey) {
+    throw new Error("No Groq API Key configured for fallback!");
+  }
+
+  console.log("[Agent LLM Client] Attempting Groq (Llama 3.3 70B) fallback...");
+  
+  // Disable certificate validation to bypass local Sophos decrypting proxy certificate blocks
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+  
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${groqKey}`
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: responseMimeType === "application/json" ? { type: "json_object" } : undefined
+    })
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Groq API error: ${response.status} ${response.statusText} - ${errText}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
+/**
+ * Main wrapper called by auditor agent nodes. Falls back to Groq if Gemini fails/rate-limits.
+ */
+export async function callGemini(prompt, responseMimeType = "text/plain") {
+  const now = Date.now();
+  
+  // If Gemini is in rate-limit cooldown, bypass it entirely and route to Groq from the beginning
+  if (globalUseGroqBackup) {
+    if (now - lastGeminiFailureTime < GEMINI_COOLDOWN_MS) {
+      console.log("[Agent LLM Client] Gemini is in cooldown due to rate limits. Routing directly to Groq.");
+      if (process.env.GROQ_API_KEY) {
+        return await callGroqFallback(prompt, responseMimeType);
+      }
+    } else {
+      // Cooldown expired, clear flag and try Gemini again
+      globalUseGroqBackup = false;
+      console.log("[Agent LLM Client] Gemini cooldown expired. Attempting Gemini again.");
+    }
+  }
+
+  try {
+    return await callGeminiInternal(prompt, responseMimeType);
+  } catch (geminiError) {
+    const errorMsg = String(geminiError.message || geminiError);
+    const isRateLimit = errorMsg.includes("429") || 
+                        errorMsg.toUpperCase().includes("QUOTA") || 
+                        errorMsg.toUpperCase().includes("RESOURCE_EXHAUSTED");
+    
+    if (isRateLimit) {
+      console.warn(`[Agent LLM Client] Gemini rate limit hit. Activating Groq fallback and entering cooldown...`);
+      activateGroqBackup();
+    } else {
+      console.warn(`[Agent LLM Client] Gemini audit node failed: ${errorMsg}. Trying Groq fallback...`);
+    }
+
+    if (process.env.GROQ_API_KEY) {
+      try {
+        return await callGroqFallback(prompt, responseMimeType);
+      } catch (groqError) {
+        console.error("[Agent LLM Client] Groq fallback failed as well:", groqError);
+      }
+    }
+    throw geminiError; // rethrow original Gemini error if Groq failed or wasn't configured
+  }
 }
 
 /**
@@ -179,17 +288,7 @@ async function plannerNode(state) {
     };
   } catch (error) {
     console.error("Planner Node failed:", error);
-    return {
-      logs: [
-        logStart,
-        {
-          agent: "Planner",
-          status: "failed",
-          message: `Failed to resolve company or generate plan: ${sanitizeErrorMessage(error)}`,
-          timestamp: new Date()
-        }
-      ]
-    };
+    throw new Error(`Failed to resolve company or generate plan: ${sanitizeErrorMessage(error)}`);
   }
 }
 
@@ -466,10 +565,20 @@ async function valuationAgentNode(state) {
     - P/E Ratio: ${quote.trailingPE} (Trailing), ${quote.forwardPE} (Forward)
     - Debt-to-Equity: ${ratios.debtToEquity}
     - Return on Equity (ROE): ${ratios.returnOnEquity}
+    - Return on Assets (ROA): ${ratios.returnOnAssets}
     - Profit Margin: ${ratios.profitMargin}
+    - Operating Margin: ${ratios.operatingMargin}
+    - Price-to-Book (P/B) Ratio: ${ratios.priceToBook}
+    - Revenue Growth: ${ratios.revenueGrowth}
+    - Earnings Growth: ${ratios.earningsGrowth}
     - News Sentiment Score: ${sentimentScore} (-1 to 1)
     - News Sentiment Analysis: ${sentimentAnalysis}
     - Financial Risks Audited: ${riskAnalysis}
+
+    Decision Guidelines:
+    - Be objective and balanced. If a company exhibits strong fundamentals (e.g. solid profit margins, high ROE, manageable debt, positive sentiment, or attractive PE multiples), you should choose "INVEST".
+    - If the fundamentals are highly risky, missing critical data points, or poor, you should choose "PASS".
+    - If the outlook is mixed or neutral, you should choose "HOLD".
 
     Evaluate if the current pricing offers a margin of safety and potential upside.
     Output a JSON object containing:
@@ -589,16 +698,16 @@ async function reportGeneratorNode(state) {
     [A highly concise, bulleted Executive Summary list (using 3-4 bullet points starting with "-") highlighting the final decision: ${decision} and core rationale. Keep it crisp, direct, and brief.]
     
     ## 2. Financial Analysis
-    [Evaluation of key metrics, profit margins, capital structures, and statements]
+    [Provide this section as a list of detailed bullet points (each starting with "-") evaluating key metrics, profit margins, capital structures, and statements.]
     
     ## 3. Business Analysis
-    [Analysis of their core business model and revenue channels based on the planner guidelines: ${plannerInstructions}]
+    [Provide this section as a list of detailed bullet points (each starting with "-") analyzing their core business model, value proposition, and revenue channels based on the planner guidelines: ${plannerInstructions}.]
     
     ## 4. Competitive Position
-    [Analysis of their moat, market standing, and sector peer position]
+    [Provide this section as a list of detailed bullet points (each starting with "-") analyzing their moat, market standing, competitive advantages, and sector peer position.]
     
     ## 5. Valuation
-    [Summary of fair pricing, multiples, and price margins]
+    [Provide this section as a list of detailed bullet points (each starting with "-") summarizing fair pricing, multiples, valuation models, and price margins based on: ${valuationAnalysis}.]
     
     ## 6. Risks
     [Detailing structural risks, leverage, and specific issues: ${riskAnalysis}]
@@ -649,6 +758,20 @@ const builder = new StateGraph({
   channels: graphState
 });
 
+// Override addEdge to bypass single-outbound validation (enables standard parallel fan-out)
+builder.addEdge = function(startKey, endKey) {
+  if (startKey === END) {
+    throw new Error("END cannot be a start node");
+  }
+  if (!this.nodes[startKey]) {
+    throw new Error(`Need to addNode \`${startKey}\` first`);
+  }
+  if (!this.nodes[endKey] && endKey !== END) {
+    throw new Error(`Need to addNode \`${endKey}\` first`);
+  }
+  this.edges.add([startKey, endKey]);
+};
+
 builder.addNode("planner", plannerNode);
 builder.addNode("financial_agent", financialAgentNode);
 builder.addNode("news_agent", newsAgentNode);
@@ -657,24 +780,15 @@ builder.addNode("sentiment_agent", sentimentAgentNode);
 builder.addNode("valuation_agent", valuationAgentNode);
 builder.addNode("report_generator", reportGeneratorNode);
 
-// Define edges (Parallel Multi-Branch Workflow)
+// Define edges (Sequential Multi-Agent Pipeline)
 builder.setEntryPoint("planner");
 
-// Use conditional routing to fan out from planner to both branches concurrently
-builder.addConditionalEdges(
-  "planner",
-  () => ["financial_agent", "news_agent"]
-);
-
-// Branch A: Financial analysis & Debt/Risk audit
+// Transition sequentially to avoid state-merging latency and Pregel fan-in write conflict bugs
+builder.addEdge("planner", "financial_agent");
 builder.addEdge("financial_agent", "risk_agent");
-builder.addEdge("risk_agent", "valuation_agent"); // Link Branch A to Valuation
-
-// Branch B: Scraping news & evaluating NLP Sentiment
+builder.addEdge("risk_agent", "news_agent");
 builder.addEdge("news_agent", "sentiment_agent");
-builder.addEdge("sentiment_agent", "valuation_agent"); // Link Branch B to Valuation
-
-// Final compilation
+builder.addEdge("sentiment_agent", "valuation_agent");
 builder.addEdge("valuation_agent", "report_generator");
 builder.setFinishPoint("report_generator");
 

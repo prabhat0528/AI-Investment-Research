@@ -1,7 +1,7 @@
 import express from 'express';
 import { query } from '../../../core/db.js';
 import { authenticateToken } from '../../../core/middleware/auth.js';
-import { graph } from '../agent/graph.js';
+import { graph, activateGroqBackup } from '../agent/graph.js';
 
 const router = express.Router();
 
@@ -105,163 +105,202 @@ router.post('/research', authenticateToken, async (req, res) => {
 
     // Run LangGraph.js asynchronously and stream updates into database in the background
     (async () => {
-      try {
-        const stream = await graph.stream({ companyName });
-        let currentState = { 
-          logs: initLogs, 
-          ticker: 'PENDING', 
-          companyName,
-          decision: 'HOLD',
-          reasoning: 'Research analysis in progress...'
-        };
+      async function runGraphWithRetry() {
+        try {
+          const stream = await graph.stream({ companyName });
+          let currentState = { 
+            logs: initLogs, 
+            ticker: 'PENDING', 
+            companyName,
+            decision: 'HOLD',
+            reasoning: 'Research analysis in progress...'
+          };
 
-        for await (const update of stream) {
-          // Object key is the node name that finished
-          const nodeName = Object.keys(update)[0];
-          const nodeState = update[nodeName];
+          for await (const update of stream) {
+            // Object key is the node name that finished
+            const nodeName = Object.keys(update)[0];
+            const nodeState = update[nodeName];
 
-          // 1. Merge logs: replace the waiting logs with actual running/finished logs
-          if (nodeState.logs) {
-            nodeState.logs.forEach(newLog => {
-              const idx = currentState.logs.findIndex(l => l.agent === newLog.agent);
-              if (idx !== -1) {
-                currentState.logs[idx] = newLog;
-              } else {
-                currentState.logs.push(newLog);
-              }
-            });
-          }
-
-          // 2. Set node progress state in the log list
-          // Update downstream agents status based on active nodes
-          if (nodeName === 'planner') {
-            currentState.ticker = nodeState.ticker || currentState.ticker;
-            currentState.companyName = nodeState.companyName || currentState.companyName;
-            
-            // Mark financial/news agents as running
-            const fIdx = currentState.logs.findIndex(l => l.agent === "Financial Agent");
-            const nIdx = currentState.logs.findIndex(l => l.agent === "News Agent");
-            if (fIdx !== -1) currentState.logs[fIdx].status = "running";
-            if (nIdx !== -1) currentState.logs[nIdx].status = "running";
-          }
-          else if (nodeName === 'financial_agent') {
-            currentState.financialData = nodeState.financialData;
-            // Mark risk agent as running
-            const rIdx = currentState.logs.findIndex(l => l.agent === "Risk Agent");
-            if (rIdx !== -1) currentState.logs[rIdx].status = "running";
-          }
-          else if (nodeName === 'news_agent') {
-            currentState.newsArticles = nodeState.newsArticles;
-            // Mark sentiment agent as running
-            const sIdx = currentState.logs.findIndex(l => l.agent === "Sentiment Agent");
-            if (sIdx !== -1) currentState.logs[sIdx].status = "running";
-          }
-          else if (nodeName === 'risk_agent' || nodeName === 'sentiment_agent') {
-            // Check if both are finished, then mark valuation as running
-            const rLog = currentState.logs.find(l => l.agent === "Risk Agent");
-            const sLog = currentState.logs.find(l => l.agent === "Sentiment Agent");
-            if (rLog?.status === 'finished' && sLog?.status === 'finished') {
-              const vIdx = currentState.logs.findIndex(l => l.agent === "Valuation Agent");
-              if (vIdx !== -1) currentState.logs[vIdx].status = "running";
+            // 1. Merge logs: replace the waiting logs with actual running/finished logs
+            if (nodeState.logs) {
+              nodeState.logs.forEach(newLog => {
+                const idx = currentState.logs.findIndex(l => l.agent === newLog.agent);
+                if (idx !== -1) {
+                  currentState.logs[idx] = newLog;
+                } else {
+                  currentState.logs.push(newLog);
+                }
+              });
             }
-          }
-          else if (nodeName === 'valuation_agent') {
-            currentState.decision = nodeState.decision || currentState.decision;
-            currentState.reasoning = nodeState.reasoning || currentState.reasoning;
-            currentState.strategicAudit = nodeState.strategicAudit || currentState.strategicAudit;
-            currentState.financialRisks = nodeState.financialRisks || currentState.financialRisks;
-            
-            // Mark report generator as running
-            const repIdx = currentState.logs.findIndex(l => l.agent === "Report Generator");
-            if (repIdx !== -1) currentState.logs[repIdx].status = "running";
-          }
-          else if (nodeName === 'report_generator') {
-            currentState.finalReport = nodeState.finalReport;
+
+            // 2. Set node progress state in the log list
+            // Update downstream agents status based on active nodes
+            if (nodeName === 'planner') {
+              currentState.ticker = nodeState.ticker || currentState.ticker;
+              currentState.companyName = nodeState.companyName || currentState.companyName;
+              
+              // Mark financial/news agents as running
+              const fIdx = currentState.logs.findIndex(l => l.agent === "Financial Agent");
+              const nIdx = currentState.logs.findIndex(l => l.agent === "News Agent");
+              if (fIdx !== -1) currentState.logs[fIdx].status = "running";
+              if (nIdx !== -1) currentState.logs[nIdx].status = "running";
+            }
+            else if (nodeName === 'financial_agent') {
+              currentState.financialData = nodeState.financialData;
+              // Mark risk agent as running
+              const rIdx = currentState.logs.findIndex(l => l.agent === "Risk Agent");
+              if (rIdx !== -1) currentState.logs[rIdx].status = "running";
+            }
+            else if (nodeName === 'news_agent') {
+              currentState.newsArticles = nodeState.newsArticles;
+              // Mark sentiment agent as running
+              const sIdx = currentState.logs.findIndex(l => l.agent === "Sentiment Agent");
+              if (sIdx !== -1) currentState.logs[sIdx].status = "running";
+            }
+            else if (nodeName === 'risk_agent' || nodeName === 'sentiment_agent') {
+              // Check if both are finished, then mark valuation as running
+              const rLog = currentState.logs.find(l => l.agent === "Risk Agent");
+              const sLog = currentState.logs.find(l => l.agent === "Sentiment Agent");
+              if (rLog?.status === 'finished' && sLog?.status === 'finished') {
+                const vIdx = currentState.logs.findIndex(l => l.agent === "Valuation Agent");
+                if (vIdx !== -1) currentState.logs[vIdx].status = "running";
+              }
+            }
+            else if (nodeName === 'valuation_agent') {
+              currentState.decision = nodeState.decision || currentState.decision;
+              currentState.reasoning = nodeState.reasoning || currentState.reasoning;
+              currentState.strategicAudit = nodeState.strategicAudit || currentState.strategicAudit;
+              currentState.financialRisks = nodeState.financialRisks || currentState.financialRisks;
+              
+              // Mark report generator as running
+              const repIdx = currentState.logs.findIndex(l => l.agent === "Report Generator");
+              if (repIdx !== -1) currentState.logs[repIdx].status = "running";
+            }
+            else if (nodeName === 'report_generator') {
+              currentState.finalReport = nodeState.finalReport;
+            }
+
+            // 3. Update the database record in real-time
+            await query(
+              `UPDATE research_reports 
+               SET company_name = $1, ticker = $2, decision = $3, reasoning = $4, logs = $5 
+               WHERE id = $6`,
+              [
+                currentState.companyName,
+                currentState.ticker,
+                currentState.decision,
+                currentState.reasoning,
+                JSON.stringify(currentState.logs),
+                reportId
+              ]
+            );
           }
 
-          // 3. Update the database record in real-time
+          // 4. Once streaming is complete, compile the final segmented sections
+          const finalReportText = currentState.finalReport;
+          const quote = currentState.financialData?.quote || {};
+          const ratios = currentState.financialData?.statements?.ratios || {};
+          
+          const reportSections = {
+            summary: extractSection(finalReportText, "1. Summary"),
+            financialAnalysis: extractSection(finalReportText, "2. Financial Analysis"),
+            businessAnalysis: extractSection(finalReportText, "3. Business Analysis"),
+            competitivePosition: extractSection(finalReportText, "4. Competitive Position"),
+            valuation: extractSection(finalReportText, "5. Valuation"),
+            risks: extractSection(finalReportText, "6. Risks"),
+            opportunities: extractSection(finalReportText, "7. Opportunities"),
+            investmentThesis: extractSection(finalReportText, "8. Investment Thesis"),
+            references: currentState.newsArticles && currentState.newsArticles.length > 0
+              ? currentState.newsArticles.map(n => `- [${n.title}](${n.link || '#'}) (${n.publisher})`).join("\n")
+              : newsArticlesList(currentState.logs), // Fallback reference generator
+            fullReport: finalReportText,
+            metrics: {
+              peRatio: quote.trailingPE || quote.forwardPE || null,
+              roe: ratios.returnOnEquity || null,
+              debtToEquity: ratios.debtToEquity || null,
+              profitMargin: ratios.profitMargin || null
+            },
+            history: currentState.financialData?.history || [],
+            strategicAudit: currentState.strategicAudit || {},
+            financialRisks: currentState.financialRisks || {}
+          };
+
           await query(
             `UPDATE research_reports 
-             SET company_name = $1, ticker = $2, decision = $3, reasoning = $4, logs = $5 
-             WHERE id = $6`,
-            [
-              currentState.companyName,
-              currentState.ticker,
-              currentState.decision,
-              currentState.reasoning,
-              JSON.stringify(currentState.logs),
-              reportId
-            ]
+             SET report_sections = $1 
+             WHERE id = $2`,
+            [JSON.stringify(reportSections), reportId]
+          );
+
+          // Auto-populate the newly finished report directly into the cache
+          const completedRes = await query(
+            'SELECT id, user_id, company_name, ticker, decision, reasoning, report_sections, logs, created_at FROM research_reports WHERE id = $1',
+            [reportId]
+          );
+          if (completedRes.rows.length > 0) {
+            const report = completedRes.rows[0];
+            reportCache.set(String(reportId), {
+              id: report.id,
+              userId: report.user_id,
+              companyName: report.company_name,
+              ticker: report.ticker,
+              decision: report.decision,
+              reasoning: report.reasoning,
+              reportSections: report.report_sections,
+              logs: report.logs,
+              createdAt: report.created_at
+            });
+            console.log(`[Cache Auto-Populate] Saved newly finished report ${reportId} directly into LRU cache.`);
+          }
+
+        } catch (err) {
+          const errorMsg = String(err.message || err);
+          const isRateLimit = errorMsg.includes("429") || 
+                              errorMsg.toUpperCase().includes("QUOTA") || 
+                              errorMsg.toUpperCase().includes("RESOURCE_EXHAUSTED") ||
+                              errorMsg.toLowerCase().includes("rate limit") ||
+                              errorMsg.toLowerCase().includes("quota failure");
+
+          if (isRateLimit && process.env.GROQ_API_KEY) {
+            console.warn(`[Audit Express Route] Gemini rate limit hit during execution for report ${reportId}. Activating Groq fallback globally and restarting audit...`);
+            activateGroqBackup();
+            
+            // Append visual notice to user in the UI progress logs
+            const noticeLog = {
+              agent: "System",
+              status: "running",
+              message: "⚠️ Gemini rate limit exceeded. Transitioning flow to Groq (Llama 3.3). Restarting audit from scratch...",
+              timestamp: new Date()
+            };
+            const currentLogs = (typeof currentState !== "undefined" && currentState && currentState.logs) ? currentState.logs : initLogs;
+            const updatedLogs = [...currentLogs, noticeLog];
+            
+            await query(
+              `UPDATE research_reports 
+               SET logs = $1 
+               WHERE id = $2`,
+              [JSON.stringify(updatedLogs), reportId]
+            );
+            
+            // Add a short cooling delay before restarting from scratch
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Restart the entire pipeline execution from scratch (will route exclusively to Groq)
+            return await runGraphWithRetry();
+          }
+
+          console.error(`Agent run error for report ${reportId}:`, err);
+          const failLogs = [{ agent: "System", status: "failed", message: err.message, timestamp: new Date() }];
+          await query(
+            `UPDATE research_reports 
+             SET reasoning = $1, logs = $2 
+             WHERE id = $3`,
+            [`Research failed: ${err.message}`, JSON.stringify(failLogs), reportId]
           );
         }
-
-        // 4. Once streaming is complete, compile the final segmented sections
-        const finalReportText = currentState.finalReport;
-        const quote = currentState.financialData?.quote || {};
-        const ratios = currentState.financialData?.statements?.ratios || {};
-        
-        const reportSections = {
-          summary: extractSection(finalReportText, "1. Summary"),
-          financialAnalysis: extractSection(finalReportText, "2. Financial Analysis"),
-          businessAnalysis: extractSection(finalReportText, "3. Business Analysis"),
-          competitivePosition: extractSection(finalReportText, "4. Competitive Position"),
-          valuation: extractSection(finalReportText, "5. Valuation"),
-          risks: extractSection(finalReportText, "6. Risks"),
-          opportunities: extractSection(finalReportText, "7. Opportunities"),
-          investmentThesis: extractSection(finalReportText, "8. Investment Thesis"),
-          references: currentState.newsArticles && currentState.newsArticles.length > 0
-            ? currentState.newsArticles.map(n => `- [${n.title}](${n.link || '#'}) (${n.publisher})`).join("\n")
-            : newsArticlesList(currentState.logs), // Fallback reference generator
-          fullReport: finalReportText,
-          metrics: {
-            peRatio: quote.trailingPE || quote.forwardPE || null,
-            roe: ratios.returnOnEquity || null,
-            debtToEquity: ratios.debtToEquity || null,
-            profitMargin: ratios.profitMargin || null
-          },
-          history: currentState.financialData?.history || [],
-          strategicAudit: currentState.strategicAudit || {},
-          financialRisks: currentState.financialRisks || {}
-        };
-
-        await query(
-          `UPDATE research_reports 
-           SET report_sections = $1 
-           WHERE id = $2`,
-          [JSON.stringify(reportSections), reportId]
-        );
-
-        // Auto-populate the newly finished report directly into the cache
-        const completedRes = await query(
-          'SELECT id, user_id, company_name, ticker, decision, reasoning, report_sections, logs, created_at FROM research_reports WHERE id = $1',
-          [reportId]
-        );
-        if (completedRes.rows.length > 0) {
-          const report = completedRes.rows[0];
-          reportCache.set(String(reportId), {
-            id: report.id,
-            userId: report.user_id,
-            companyName: report.company_name,
-            ticker: report.ticker,
-            decision: report.decision,
-            reasoning: report.reasoning,
-            reportSections: report.report_sections,
-            logs: report.logs,
-            createdAt: report.created_at
-          });
-          console.log(`[Cache Auto-Populate] Saved newly finished report ${reportId} directly into LRU cache.`);
-        }
-
-      } catch (err) {
-        console.error(`Agent run error for report ${reportId}:`, err);
-        const failLogs = [{ agent: "System", status: "failed", message: err.message, timestamp: new Date() }];
-        await query(
-          `UPDATE research_reports 
-           SET reasoning = $1, logs = $2 
-           WHERE id = $3`,
-          [`Research failed: ${err.message}`, JSON.stringify(failLogs), reportId]
-        );
       }
+
+      await runGraphWithRetry();
     })();
 
     res.status(202).json({

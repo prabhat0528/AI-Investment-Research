@@ -32,10 +32,17 @@ export async function searchTicker(companyName) {
 export async function getQuoteData(ticker) {
   try {
     const quote = await yahooFinance.quote(ticker);
+    
+    // Fallback calculation for PE Ratio if not directly populated (common on some international exchanges)
+    let trailingPE = quote.trailingPE;
+    if (!trailingPE && quote.regularMarketPrice && quote.epsTrailingTwelveMonths && quote.epsTrailingTwelveMonths > 0) {
+      trailingPE = quote.regularMarketPrice / quote.epsTrailingTwelveMonths;
+    }
+
     return {
       currentPrice: quote.regularMarketPrice,
       marketCap: quote.marketCap,
-      trailingPE: quote.trailingPE,
+      trailingPE: trailingPE ? parseFloat(trailingPE.toFixed(2)) : null,
       forwardPE: quote.forwardPE,
       beta: quote.beta,
       fiftyTwoWeekHigh: quote.fiftyTwoWeekHigh,
@@ -92,13 +99,21 @@ export async function getFinancialStatements(ticker) {
       freeCashFlow: item.totalCashFromOperatingActivities + (item.capitalExpenditures || 0) // CapEx is negative in Yahoo
     }));
 
+    let debtToEquity = financialData.debtToEquity;
+    if ((debtToEquity === undefined || debtToEquity === null) && balanceHistory && balanceHistory.length > 0) {
+      const latestBalance = balanceHistory[0];
+      if (latestBalance.totalLiab && latestBalance.totalStockholderEquity && latestBalance.totalStockholderEquity !== 0) {
+        debtToEquity = latestBalance.totalLiab / latestBalance.totalStockholderEquity;
+      }
+    }
+
     return {
       ratios: {
         profitMargin: financialData.profitMargins,
         operatingMargin: financialData.operatingMargins,
         returnOnAssets: financialData.returnOnAssets,
         returnOnEquity: financialData.returnOnEquity,
-        debtToEquity: financialData.debtToEquity,
+        debtToEquity: debtToEquity,
         currentRatio: financialData.currentRatio,
         quickRatio: financialData.quickRatio,
         totalCash: financialData.totalCash,
@@ -123,21 +138,32 @@ export async function getFinancialStatements(ticker) {
  */
 export async function getRecentNews(ticker, companyName) {
   try {
+    const cleanTicker = ticker.split('.')[0].toLowerCase();
+    const keywords = [
+      cleanTicker,
+      ...companyName.toLowerCase().split(/\s+/).filter(w => w.length > 2 && w !== 'ltd' && w !== 'inc' && w !== 'corp' && w !== 'co' && w !== 'limited')
+    ];
+
+    const filterNews = (newsArray) => {
+      if (!Array.isArray(newsArray)) return [];
+      return newsArray.filter(item => {
+        const titleLower = (item.title || "").toLowerCase();
+        return keywords.some(kw => titleLower.includes(kw));
+      });
+    };
+
     const searchQuery = `${ticker} ${companyName}`;
     const result = await yahooFinance.search(searchQuery);
+    let rawNews = result.news || [];
 
-    if (!result.news || result.news.length === 0) {
+    if (rawNews.length === 0) {
       const fallbackResult = await yahooFinance.search(ticker);
-      if (!fallbackResult.news) return [];
-      return fallbackResult.news.map(item => ({
-        title: item.title,
-        publisher: item.publisher,
-        link: item.link,
-        pubdate: item.pubdate || item.pubDate
-      }));
+      rawNews = fallbackResult.news || [];
     }
 
-    return result.news.map(item => ({
+    const filtered = filterNews(rawNews);
+
+    return filtered.map(item => ({
       title: item.title,
       publisher: item.publisher,
       link: item.link,
@@ -158,15 +184,16 @@ export async function getHistoricalPrices(ticker) {
     const fortyFiveDaysAgo = new Date();
     fortyFiveDaysAgo.setDate(today.getDate() - 45);
 
-    const result = await yahooFinance.historical(ticker, {
-      period1: fortyFiveDaysAgo.toISOString().split('T')[0],
-      period2: today.toISOString().split('T')[0],
+    const result = await yahooFinance.chart(ticker, {
+      period1: fortyFiveDaysAgo,
+      period2: today,
       interval: '1d'
     });
 
-    if (!Array.isArray(result)) return [];
+    if (!result || !Array.isArray(result.quotes)) return [];
 
-    return result
+    return result.quotes
+      .filter(day => day && day.date && day.close !== null && day.close !== undefined)
       .map(day => ({
         date: day.date,
         close: day.close

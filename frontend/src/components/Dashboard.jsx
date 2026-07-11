@@ -140,7 +140,7 @@ export default function Dashboard({
         logging: false
       },
       jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
-      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+      pagebreak:    { mode: ['css', 'legacy'] }
     };
 
     const generatePdf = () => {
@@ -603,8 +603,8 @@ export default function Dashboard({
               </div>
             </div>
 
-            {/* Strategic Audit Flowchart Section */}
-            <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50 page-break-avoid">
+            {/* Strategic Audit Flowchart Section (Forces clean Page 2 start) */}
+            <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50 page-break-before page-break-avoid">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">
                 Strategic Factor Mapping & Scenarios
               </h3>
@@ -613,15 +613,19 @@ export default function Dashboard({
               </div>
             </div>
 
-            {/* Dynamic Report Chapters (Parsed Markdown) */}
+            {/* Dynamic Report Chapters (Parsed Markdown with pagebreak checkpoints) */}
             <div className="space-y-8 pt-6 border-t border-slate-200">
               {tabConfig
                 .filter(tab => tab.key !== 'strategicAudit' && tab.key !== 'references' && tab.key !== 'summary')
                 .map(tab => {
                   const contentText = activeReport.reportSections?.[tab.key];
                   if (!contentText) return null;
+                  
+                  // Force page breaks before major structural changes to balance pagination
+                  const shouldBreakBefore = ['financialAnalysis', 'valuation', 'investmentThesis'].includes(tab.key);
+                  
                   return (
-                    <div key={tab.key} className="space-y-2">
+                    <div key={tab.key} className={`space-y-2 ${shouldBreakBefore ? 'page-break-before' : ''} page-break-avoid`}>
                       <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1 page-break-avoid">
                         {tab.label}
                       </h3>

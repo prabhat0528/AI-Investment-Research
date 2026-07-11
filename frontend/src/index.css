@@ -180,6 +180,24 @@
   z-index: -9999;
 }
 
+/* PDF Print & Pagebreak Control Utilities */
+.page-break-before {
+  page-break-before: always !important;
+  break-before: page !important;
+}
+
+.page-break-avoid {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+.markdown-content p,
+.markdown-content li,
+.markdown-content tr {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
 /* Stock Marquee Animation */
 @keyframes marquee {
   0% { transform: translateX(0%); }

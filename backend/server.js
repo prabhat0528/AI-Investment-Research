@@ -12,8 +12,7 @@ import { startNotificationScheduler } from './services/auditor/utils/notificatio
 
 dotenv.config();
 
-// Globally bypass self-signed SSL issues (common in proxy/development environments)
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;

@@ -133,7 +133,7 @@ graph TD
 ## 💬 My Chats with AI
 
 To explore the conceptual roadmap, pair-programming thought process, and architectural decisions made while developing this project, check out the chat transcript:
-* 🔗 [Investment Research Agent Project Design Chat](https://chatgpt.com/share/6a490097-72b8-83ee-956c-f4511a21d4b7) — A transcript detailing how we conceptualized, debugged, and optimized the suite.
+* 🔗 [Investment Research Agent Project Design Chat](https://chatgpt.com/c/6a48fa48-328c-83e8-84f1-4de73b02b174) — A transcript detailing how we conceptualized, debugged, and optimized the suite.
 
 ---
 

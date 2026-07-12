@@ -126,7 +126,7 @@ graph TD
 | **Backend** | Node.js, Express, PostgreSQL (Neon client) |
 | **AI Orchestration** | `@langchain/langgraph`, Google Gemini SDK |
 | **Data Providers** | Finnhub API (Real-time), Yahoo Finance API (Historical & News) |
-| **Deployment** | Vercel (Frontend), Render / Railway (Backend) |
+| **Deployment** | Vercel  |
 
 ---
 

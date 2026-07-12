@@ -101,19 +101,11 @@ graph TD
         ValAgent["valuation_agent"]
         RepGen["report_generator"]
 
-        %% Parallel Fan-out
         Planner --> FinAgent
-        Planner --> NewsAgent
-
-        %% Branch A
         FinAgent --> RiskAgent
-        RiskAgent --> ValAgent
-
-        %% Branch B
+        RiskAgent --> NewsAgent
         NewsAgent --> SentAgent
         SentAgent --> ValAgent
-
-        %% Parallel Fan-in
         ValAgent --> RepGen
     end
 
@@ -145,13 +137,6 @@ To explore the conceptual roadmap, pair-programming thought process, and archite
 
 ---
 
-## 🔗 Project Links
-
-Access the complete source code, repository, and live deployment here:
-* **GitHub Link:** [https://github.com/prabhat0528/AI-Investment-Research](https://github.com/prabhat0528/AI-Investment-Research)
-* **Live Deployment Link:** [https://ai-investment-research-analysis.vercel.app/](https://ai-investment-research-analysis.vercel.app/)
-
----
 
 ## 📬 Support & Contact
 
